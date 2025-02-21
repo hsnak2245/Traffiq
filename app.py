@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from groq import Groq
 
-
 # Initialize Groq client
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -14,25 +13,30 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load CSS
+# Load CSS with updated styling
 st.markdown("""
 <style>
 /* Main container */
 .main {
-    background-color: #1a1f2e;
+    background: linear-gradient(135deg, #1a1f2e 0%, #2d1f3d 100%);
     color: white;
-    width: 60%;
-    margin: auto;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 /* Title styling */
 .page-title {
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: white;
+    background: linear-gradient(120deg, #ff6b6b, #4ecdc4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     text-align: center;
     margin: 2rem 0;
-    font-size: 3.5rem;
-    font-weight: 700;
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
 }
 
 .subtitle {
@@ -41,89 +45,119 @@ st.markdown("""
     text-align: center;
     margin-bottom: 3rem;
     font-size: 1.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Button grid styling */
+.button-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
 .stButton > button {
-    width: 80%;  /* Reduced width */
-    margin: 0 auto;  /* Centered */
-    background: rgba(0, 255, 255, 0.1);
+    width: 100%;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(78, 205, 196, 0.1) 100%) !important;
     color: white !important;
-    border: 1px solid rgba(0, 255, 255, 0.2) !important;
-    border-radius: 12px !important;
-    padding: 1.5rem !important;
-    font-size: 1.2rem !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 16px !important;
+    padding: 1.8rem !important;
+    font-size: 1.3rem !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     transition: all 0.3s ease !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .stButton > button:hover {
-    background: rgba(0, 255, 255, 0.15) !important;
-    border-color: rgba(0, 255, 255, 0.3) !important;
-    transform: translateY(-2px);
-}
-
-.button-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    display: block;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(78, 205, 196, 0.2) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Chat container styling */
 .chat-container {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 2rem;
-    margin: 2rem auto;  /* Centered */
-    width: 80%;  /* Reduced width */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.08) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin: 3rem auto;
+    max-width: 800px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .chat-title {
-    color: white;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
+    color: #4ecdc4;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    text-align: center;
 }
 
 .user-message {
-    background-color: rgba(59, 130, 246, 0.1);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
     color: white;
-    padding: 1rem;
-    border-radius: 12px;
-    margin: 0.5rem 0;
+    padding: 1.2rem;
+    border-radius: 16px;
+    margin: 1rem 0;
     border: 1px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .bot-message {
-    background-color: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
     color: white;
-    padding: 1rem;
-    border-radius: 12px;
-    margin: 0.5rem 0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.2rem;
+    border-radius: 16px;
+    margin: 1rem 0;
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Chat input styling */
 .stTextInput > div > div > input {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
     color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px !important;
-    padding: 1rem !important;
+    border: 2px solid rgba(78, 205, 196, 0.3) !important;
+    border-radius: 16px !important;
+    padding: 1.2rem !important;
+    font-size: 1.1rem !important;
+    transition: all 0.3s ease;
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: rgba(59, 130, 246, 0.5) !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(78, 205, 196, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2) !important;
 }
 
 /* Hide Streamlit branding */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(78, 205, 196, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(78, 205, 196, 0.7);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -184,13 +218,16 @@ def process_query_with_rag(query):
 
 def home_page():
     st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Traffic Intelligence for Qatar</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Intelligent Traffic Management System for Qatar</p>', unsafe_allow_html=True)
 
     # Create a container for better spacing
-    main_container = st.container()
-    
-    with main_container:
-        # 4x1 Button Grid with improved layout
+    with st.container():
+        # Add the button-container class for centered, constrained width
+        st.markdown('<div class="button-container">', unsafe_allow_html=True)
+        
+        # 2x2 Button Grid
+        col1, col2 = st.columns(2)
+        
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
             ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
@@ -198,9 +235,12 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for label, page, link in buttons:
-            if st.button(label, key=f"btn_{page}"):
-                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        for i, (label, page, link) in enumerate(buttons):
+            with col1 if i % 2 == 0 else col2:
+                if st.button(label, key=f"btn_{page}"):
+                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Chat Interface
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
