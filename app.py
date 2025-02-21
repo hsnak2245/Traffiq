@@ -28,19 +28,22 @@ def home_page():
     # Analytics Buttons Grid
     cols = st.columns(5)
     buttons = [
-        ("Accidents", "🚑", "accidents"),
-        ("Violations", "🚔", "violations"),
-        ("License", "📇", "license"),
-        ("Vehicle", "🚗", "vehicle"),
-        ("Environment", "🌳", "environment")
+        ("Accidents", "🚑", "accidents", "https://accidents.streamlit.app/"),
+        ("Violations", "🚔", "violations", "https://violations.streamlit.app/"),
+        ("License", "📇", "license", "https://license.streamlit.app/"),
+        ("Vehicle", "🚗", "vehicle", None),
+        ("Environment", "🌳", "environment", None)
     ]
     
-    for col, (label, icon, page) in zip(cols, buttons):
+    for col, (label, icon, page, link) in zip(cols, buttons):
         with col:
-            if st.button(f"{icon} {label}", key=f"btn_{page}", 
-                        use_container_width=True,
-                        help=f"View {label} Analytics"):
-                show_page(page)
+            if link:
+                st.markdown(f'<a href="{link}" target="_blank"><button>{icon} {label}</button></a>', unsafe_allow_html=True)
+            else:
+                if st.button(f"{icon} {label}", key=f"btn_{page}", 
+                            use_container_width=True,
+                            help=f"View {label} Analytics"):
+                    show_page(page)
 
     # Key Stats Grid
     st.header("Key Statistics")
@@ -58,7 +61,7 @@ def home_page():
             """, unsafe_allow_html=True)
 
     # Dashboard Sections
-    tab_labels = [f"{icon} {label}" for (label, icon, _) in buttons]
+    tab_labels = [f"{icon} {label}" for (label, icon, _, _) in buttons]
     tabs = st.tabs(tab_labels)
     
     # Generate Sample Plots

@@ -178,7 +178,23 @@ class QatarAccidentsStreamlit:
             padding: 20px;
             border-radius: 10px;
         }
+        .home-button {
+            background-color: #FF00FF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .home-button:hover {
+            background-color: #00FFFF;
+        }
         </style>
+        """, unsafe_allow_html=True)
+
+        # Home button
+        st.markdown("""
+        <a href="https://traffiq.streamlit.app/" class="home-button">Home</a>
         """, unsafe_allow_html=True)
 
         # Title
