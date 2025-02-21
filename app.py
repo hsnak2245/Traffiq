@@ -21,43 +21,47 @@ st.markdown("""
 /* Global styles */
 body {
     font-family: 'Inter', sans-serif;
-    background: #0f172a;
-    position: relative;
-    overflow-x: hidden;
     color: #f8fafc;
+    background-color: #0f172a;
     min-height: 100vh;
+}
+
+.main {
+    position: relative;
+    z-index: 2;
 }
 
 .stApp {
     background: transparent !important;
-    position: relative;
-    z-index: 1;  /* Make sure content is above background */
 }
 
-/* Halftone overlay container */
-body::before {
-    content: '';
+/* Background Effects */
+.background-container {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-        radial-gradient(circle at 10% 0%, rgba(236, 72, 153, 0.3), transparent 50%),
-        radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.3), transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.3), transparent 50%);
     z-index: 0;
     pointer-events: none;
 }
 
-/* Halftone dots pattern */
-body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+/* Gradient background */
+.gradient-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 10% 0%, rgba(236, 72, 153, 0.3), transparent 50%),
+        radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.3), transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.3), transparent 50%);
+}
+
+/* Halftone pattern */
+.halftone {
+    position: absolute;
+    width: 100%;
+    height: 100%;
     background-image: 
         radial-gradient(circle at center,
             rgba(255, 255, 255, 0.1) 2px,
@@ -65,80 +69,58 @@ body::after {
         );
     background-size: 24px 24px;
     background-position: 0 0;
+    opacity: 0.4;
     mask-image: linear-gradient(to bottom,
         rgba(0, 0, 0, 1) 0%,
         rgba(0, 0, 0, 0.7) 50%,
         rgba(0, 0, 0, 0.5) 100%
     );
-    z-index: 0;
-    opacity: 0.4;
-    pointer-events: none;
 }
-
-# /* Update existing styles to work with new background */
-# .stApp {
-#     background: transparent !important;
-# }
-
-.feature-grid {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2.5rem;
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 2rem;
-}
-
-.chat-container {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(12px);
-}
-
-/* Additional styling for improved contrast */
-.feature-title {
-    color: #38bdf8;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.feature-description {
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
 
 /* Header styling */
 .header {
-    background: linear-gradient(to right, #1e293b, #0f172a);
     padding: 2rem 0;
     margin-bottom: 2rem;
-    border-bottom: 1px solid #334155;
+    position: relative;
+    z-index: 2;
 }
 
 .logo {
+    font-size: 3rem;
+    font-weight: 700;
+    background: linear-gradient(45deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    margin-bottom: 1rem;
     position: relative;
     z-index: 2;
 }
 
 /* Feature Grid */
 .feature-grid {
-    position: relative;
-    z-index: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2.5rem;
     max-width: 1000px;
     margin: 2rem auto;
     padding: 2rem;
+    position: relative;
+    z-index: 2;
 }
 
 .feature-card {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     position: relative;
     z-index: 2;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .feature-card:hover {
@@ -153,23 +135,25 @@ body::after {
 }
 
 .feature-title {
-    color: #06b6d4;
+    color: #38bdf8;
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .feature-description {
-    color: #e2e8f0;
+    color: rgba(255, 255, 255, 0.9);
     font-size: 0.875rem;
     margin-bottom: 1rem;
     line-height: 1.4;
     flex-grow: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .view-link {
     display: inline-block;
-    background: linear-gradient(135deg, #0a4f6d 0%, #063c5a 100%);;
+    background: linear-gradient(135deg, #0a4f6d 0%, #063c5a 100%);
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
@@ -190,11 +174,15 @@ body::after {
 
 /* Chat interface */
 .chat-container {
-.chat-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
     position: relative;
     z-index: 2;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(12px);
 }
 
 .message {
@@ -260,6 +248,12 @@ body::after {
     background: #60a5fa;
 }
 </style>
+
+<!-- Background container -->
+<div class="background-container">
+    <div class="gradient-bg"></div>
+    <div class="halftone"></div>
+</div>
 """, unsafe_allow_html=True)
 
 # Initialize session state
