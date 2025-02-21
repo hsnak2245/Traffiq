@@ -6,3 +6,5 @@ streamlit-folium
 branca
 scikit-learn
 datetime
+groq
+
