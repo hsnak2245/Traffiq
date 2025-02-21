@@ -188,7 +188,7 @@ def home_page():
     main_container = st.container()
     
     with main_container:
-        # 4x1 Button Grid with improved layout
+        # 1x4 Button Grid with improved layout
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
             ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
@@ -196,9 +196,11 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for label, page, link in buttons:
-            if st.button(label, key=f"btn_{page}"):
-                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        cols = st.columns(4)
+        for idx, (label, page, link) in enumerate(buttons):
+            with cols[idx]:
+                if st.button(label, key=f"btn_{page}"):
+                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
         # Chat Interface
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
