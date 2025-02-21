@@ -55,26 +55,28 @@ st.markdown("""
     }
 }
 
-/* Button grid styling */
+/* Button container styling */
 .button-container {
-    max-width: 300px;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
 .stButton > button {
-    width: 60%;
+    width: auto !important;
     background-color: #2C3E50 !important;
     color: #4ecdc4 !important;
     border: none !important;
     border-radius: 12px !important;
-    padding: 1.2rem !important;
-    font-size: 1.2rem !important;
+    padding: 0.8rem 1.2rem !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     margin-bottom: 1rem !important;
-    height: 100px !important;
+    height: auto !important;
 }
 
 .stButton > button:hover {
@@ -221,9 +223,7 @@ def home_page():
         # Add the button-container class for centered, constrained width
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
         
-        # 2x2 Button Grid
-        col1, col2 = st.columns(2)
-        
+        # Single row of buttons
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
             ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
@@ -231,10 +231,9 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for i, (label, page, link) in enumerate(buttons):
-            with col1 if i % 2 == 0 else col2:
-                if st.button(label, key=f"btn_{page}"):
-                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        for label, page, link in buttons:
+            if st.button(label, key=f"btn_{page}"):
+                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
