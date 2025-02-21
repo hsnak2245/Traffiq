@@ -4,3 +4,4 @@ pandas
 numpy
 streamlit-folium
 branca
+scikit-learn
