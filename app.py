@@ -21,6 +21,8 @@ st.markdown("""
 .main {
     background-color: #1a1f2e;
     color: white;
+    width: 60%;
+    margin: auto;
 }
 
 /* Title styling */
@@ -44,9 +46,9 @@ st.markdown("""
 /* Button grid styling */
 .stButton > button {
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(0, 255, 255, 0.1);
     color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(0, 255, 255, 0.2) !important;
     border-radius: 12px !important;
     padding: 1.5rem !important;
     font-size: 1.2rem !important;
@@ -56,8 +58,8 @@ st.markdown("""
 }
 
 .stButton > button:hover {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
+    background: rgba(0, 255, 255, 0.15) !important;
+    border-color: rgba(0, 255, 255, 0.3) !important;
     transform: translateY(-2px);
 }
 
@@ -186,9 +188,7 @@ def home_page():
     main_container = st.container()
     
     with main_container:
-        # 2x2 Button Grid with improved layout
-        col1, col2 = st.columns(2)
-        
+        # 4x1 Button Grid with improved layout
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
             ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
@@ -196,10 +196,9 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for i, (label, page, link) in enumerate(buttons):
-            with col1 if i % 2 == 0 else col2:
-                if st.button(label, key=f"btn_{page}"):
-                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        for label, page, link in buttons:
+            if st.button(label, key=f"btn_{page}"):
+                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
         # Chat Interface
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -223,6 +222,8 @@ def home_page():
                 st.session_state.chat_history.append({"role": "assistant", "content": response})
             
             st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def main():
     if st.session_state.page == 'home':
