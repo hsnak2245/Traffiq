@@ -35,7 +35,7 @@ st.markdown("""
     text-align: center;
     margin: 2rem 0 3rem 0;
     font-size: 4.5rem;
-    font-weight: 700;;
+    font-weight: 700;
 }
 
 @keyframes neon {
@@ -87,7 +87,6 @@ st.markdown("""
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
-
 
 .chat-title {
     color: #4ecdc4;
