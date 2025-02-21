@@ -71,11 +71,11 @@ st.markdown("""
 
 /* Chat container styling */
 .chat-container {
-    background-color: rgba(255, 255, 255, 0.05);
+    /* Removed background-color and border properties */
     border-radius: 16px;
     padding: 2rem;
     margin-top: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Removed border property */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
