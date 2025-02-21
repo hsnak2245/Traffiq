@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Space Grotesk', sans-serif !important;
+    background-color: #000000;
+    color: #00f7ff;
+}
+
+.stTextInput>div>div>input {
+    color: #00f7ff;
+    border-color: #00f7ff;
+}
+
+.st-bd {
+    background-color: #000;
+}
+
+.page-title {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.analytics-button {
+    border: 1px solid #00f7ff;
+    color: #00f7ff;
+    background: #000;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 80px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.analytics-button:hover {
+    background: #001f24;
+    color: #00f7ff;
+    border-color: #00f7ff;
+}
+
+.metric {
+    border: 1px solid #00f7ff;
+    padding: 1rem;
+    border-radius: 12px;
+}

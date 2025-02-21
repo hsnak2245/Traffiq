@@ -4,70 +4,42 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-# Custom CSS
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-    html, body, [class*="css"]  {
-        font-family: 'Space Grotesk', sans-serif;
-        background-color: #000000;
-        color: #00f7ff;
-    }
-    .stTextInput>div>div>input {
-        color: #00f7ff;
-        border-color: #00f7ff;
-    }
-    .st-bd {
-        background-color: #000;
-    }
-    .stButton>button {
-        border: 1px solid #00f7ff;
-        color: #00f7ff;
-        background: #000;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-    }
-    .stButton>button:hover {
-        background: #001f24;
-        color: #00f7ff;
-        border-color: #00f7ff;
-    }
-    .metric {
-        border: 1px solid #00f7ff;
-        padding: 1rem;
-        border-radius: 12px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# Load CSS
+with open('static/style.css') as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-# Initialize session state
-if 'chat_open' not in st.session_state:
-    st.session_state.chat_open = False
+# Initialize session state for navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'home'
 
-# Main App
-def main():
-    st.title("TraffiQ")
-    st.markdown("### Traffic Intelligence for Qatar")
+def show_page(page_name):
+    st.session_state.page = page_name
+
+# Pages
+def home_page():
+    st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="page-title">Traffic Intelligence for Qatar</h3>', unsafe_allow_html=True)
 
     # Chat Interface
     with st.container():
-        st.markdown("<div style='text-align:center; margin: 2rem 0;'>", unsafe_allow_html=True)
         user_input = st.chat_input("Ask anything about traffic data...")
-        st.markdown("</div>", unsafe_allow_html=True)
 
     # Analytics Buttons Grid
     cols = st.columns(5)
     buttons = [
-        ("Accidents", "🚑", "#accidents"),
-        ("Violations", "🚔", "#violations"),
-        ("License", "📇", "#license"),
-        ("Vehicle", "🚗", "#vehicle"),
-        ("Environment", "🌳", "#environment")
+        ("Accidents", "🚑", "accidents"),
+        ("Violations", "🚔", "violations"),
+        ("License", "📇", "license"),
+        ("Vehicle", "🚗", "vehicle"),
+        ("Environment", "🌳", "environment")
     ]
     
-    for col, (label, icon, _) in zip(cols, buttons):
+    for col, (label, icon, page) in zip(cols, buttons):
         with col:
-            st.button(f"{icon} {label}", use_container_width=True)
+            if st.button(f"{icon} {label}", key=f"btn_{page}", 
+                        use_container_width=True,
+                        help=f"View {label} Analytics"):
+                show_page(page)
 
     # Key Stats Grid
     st.header("Key Statistics")
@@ -118,6 +90,30 @@ def main():
         q1 = st.radio("Q1: Qatar has zero road fatalities in 2022", ["Fact", "Fiction"])
         q2 = st.radio("Q2: Doha has smart traffic light system", ["Fact", "Fiction"])
         q3 = st.radio("Q3: Electric vehicles are tax-free in Qatar", ["Fact", "Fiction"])
+
+def accidents_page():
+    st.markdown('<h1 class="page-title">Accidents Analytics</h1>', unsafe_allow_html=True)
+    if st.button("← Back to Home"):
+        show_page('home')
+    # Add your accidents analysis content here
+
+def violations_page():
+    st.markdown('<h1 class="page-title">Violations Analytics</h1>', unsafe_allow_html=True)
+    if st.button("← Back to Home"):
+        show_page('home')
+    # Add your violations analysis content here
+
+# Add similar functions for other pages...
+
+def main():
+    # Page routing
+    if st.session_state.page == 'home':
+        home_page()
+    elif st.session_state.page == 'accidents':
+        accidents_page()
+    elif st.session_state.page == 'violations':
+        violations_page()
+    # Add other page conditions...
 
 if __name__ == "__main__":
     main()
