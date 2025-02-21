@@ -64,6 +64,9 @@ body {
     padding: 1.5rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(8px);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .feature-card:hover {
@@ -89,25 +92,28 @@ body {
     font-size: 0.875rem;
     margin-bottom: 1rem;
     line-height: 1.4;
+    flex-grow: 1;
 }
 
-/* View Button */
-.stButton > button {
-    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
-    color: white !important;
-    padding: 0.5rem 1rem !important;
-    border-radius: 0.5rem !important;
-    font-weight: 600 !important;
-    font-size: 0.875rem !important;
-    border: none !important;
-    transition: all 0.3s ease !important;
-    cursor: pointer !important;
-    width: auto !important;
+.view-link {
+    display: inline-block;
+    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    margin-top: auto;
 }
 
-.stButton > button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3) !important;
+.view-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+    text-decoration: none;
+    color: white;
 }
 
 /* Chat interface */
@@ -240,6 +246,7 @@ def process_query_with_rag(query):
         return "I apologize, but I encountered an error processing your query. Please try again."
 
 def main():
+    # Header
     st.markdown('<h1 class="logo">TraffiQ</h1>', unsafe_allow_html=True)
     
     # Feature Grid
@@ -254,19 +261,19 @@ def main():
         },
         {
             "icon": "🚔",
-            "title": "Violations Analytics",
+            "title": "Traffic Analytics",
             "description": "Comprehensive tracking and analysis of traffic violations to improve enforcement and reduce infractions.",
             "url": "https://violations.streamlit.app/"
         },
         {
             "icon": "📇",
-            "title": "License Analytics",
+            "title": "License Management",
             "description": "Streamlined license processing system with verification tools and renewal tracking capabilities.",
             "url": "https://license.streamlit.app/"
         },
         {
             "icon": "🚗",
-            "title": "Vehicle Analytics",
+            "title": "Vehicle Registry",
             "description": "Centralized vehicle database with registration status, inspection records, and ownership history.",
             "url": "https://vehicle.streamlit.app/"
         }
@@ -281,14 +288,12 @@ def main():
                     <div class="feature-icon">{feature["icon"]}</div>
                     <div class="feature-title">{feature["title"]}</div>
                     <div class="feature-description">{feature["description"]}</div>
+                    <a href="{feature["url"]}" target="_blank" class="view-link">View Dashboard</a>
                 </div>
             ''', unsafe_allow_html=True)
-            if st.button("View Dashboard", key=f"btn_{idx}"):
-                st.markdown(f'<script>window.open("{feature["url"]}", "_blank");</script>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    
 
     
     # Display chat history
