@@ -1,125 +1,183 @@
 import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
-import numpy as np
-from acc import QatarAccidentsStreamlit
+from groq import Groq
+
+# Initialize Groq client
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # Load CSS
-with open('style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+st.markdown("""
+<style>
+.page-title {
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
 
-# Initialize session state for navigation
+.button-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.stButton button {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.2em;
+    background-color: #f0f2f6;
+    border: none;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.stButton button:hover {
+    background-color: #e0e2e6;
+    transform: translateY(-2px);
+}
+
+.chat-container {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 5px 0;
+}
+
+.bot-message {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 5px 0;
+}
+
+.ai-response {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    border-left: 4px solid #2196F3;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 
-def show_page(page_name):
-    st.session_state.page = page_name
+# Load simulated knowledge base
+@st.cache_data
+def load_knowledge_base():
+    # In a real implementation, this would load from info.txt
+    # For now, we'll use a DataFrame to simulate the knowledge base
+    data = {
+        'message': [
+            "Qatar recorded a 15% decrease in traffic accidents in urban areas after implementing smart traffic systems.",
+            "Recent policy changes require mandatory defensive driving courses for new license applicants in Qatar.",
+            "Traffic safety indicators show peak accident times between 7-9 AM and 4-6 PM in major Qatar cities.",
+            "New traffic policy focuses on reducing accidents through AI-powered traffic management and stricter enforcement.",
+            "Qatar's road safety campaign resulted in 25% reduction in pedestrian accidents in residential areas.",
+        ]
+    }
+    return pd.DataFrame(data)
 
-# Pages
+def process_query_with_rag(query):
+    try:
+        # Load knowledge base
+        social_updates_df = load_knowledge_base()
+        
+        # Find relevant context
+        relevant_updates = social_updates_df[
+            social_updates_df['message'].str.contains('|'.join(query.split()), case=False, na=False)
+        ]
+        
+        context = "\n".join(relevant_updates['message'].tolist())
+        
+        messages = [
+            {"role": "system", "content": """You are TraffiQ, an AI traffic expert and statistician for Qatar. 
+             Your role is to:
+             1. Analyze traffic patterns and accident data
+             2. Provide policy recommendations based on data
+             3. Promote road safety and best practices
+             4. Guide policymakers with data-driven insights
+             
+             Provide clear, accurate information based on available data."""},
+            {"role": "user", "content": f"Context from traffic database:\n{context}\n\nUser Question: {query}"}
+        ]
+        
+        try:
+            response = groq_client.chat.completions.create(
+                messages=messages,
+                model="mixtral-8x7b-32768",
+                temperature=0.7,
+                max_tokens=500,
+                top_p=0.9
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"AI processing error: {str(e)}"
+            
+    except Exception as e:
+        return f"Error processing query: {str(e)}"
+
 def home_page():
     st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
     st.markdown('<h3 class="page-title">Traffic Intelligence for Qatar</h3>', unsafe_allow_html=True)
 
-    # Chat Interface
-    with st.container():
-        user_input = st.chat_input("Ask anything about traffic data...")
-
-    # Analytics Buttons Grid
-    cols = st.columns(5)
+    # 2x2 Button Grid
+    col1, col2 = st.columns(2)
     buttons = [
-        ("Accidents", "🚑", "accidents", "https://accidents.streamlit.app/"),
-        ("Violations", "🚔", "violations", "https://violations.streamlit.app/"),
-        ("License", "📇", "license", "https://license.streamlit.app/"),
-        ("Vehicle", "🚗", "vehicle", None),
-        ("Environment", "🌳", "environment", None)
+        ("Accidents 🚑", "accidents", "https://accidents.streamlit.app/"),
+        ("Violations 🚔", "violations", "https://violations.streamlit.app/"),
+        ("License 📇", "license", "https://license.streamlit.app/"),
+        ("Vehicle 🚗", "vehicle", "https://vehicle.streamlit.app/")
     ]
     
-    for col, (label, icon, page, link) in zip(cols, buttons):
-        with col:
-            if link:
-                st.markdown(f'<a href="{link}" target="_blank"><button>{icon} {label}</button></a>', unsafe_allow_html=True)
-            else:
-                if st.button(f"{icon} {label}", key=f"btn_{page}", 
-                            use_container_width=True,
-                            help=f"View {label} Analytics"):
-                    show_page(page)
+    for i, (label, page, link) in enumerate(buttons):
+        with col1 if i < 2 else col2:
+            if st.button(label, key=f"btn_{page}", use_container_width=True):
+                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
-    # Key Stats Grid
-    st.header("Key Statistics")
-    stats_cols = st.columns(4)
-    metrics = [("Total Accidents", "12,345"), ("Daily Violations", "892"), 
-              ("Licenses Issued", "3,451"), ("CO2 Saved (tons)", "45,678")]
+    # Chat Interface
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    st.markdown("### Traffic Safety Assistant")
     
-    for col, (label, value) in zip(stats_cols, metrics):
-        with col:
-            st.markdown(f"""
-            <div class="metric">
-                <h3>{label}</h3>
-                <h1>{value}</h1>
-            </div>
-            """, unsafe_allow_html=True)
+    # Display chat history
+    for message in st.session_state.chat_history:
+        if message["role"] == "user":
+            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
 
-    # Dashboard Sections
-    tab_labels = [f"{icon} {label}" for (label, icon, _, _) in buttons]
-    tabs = st.tabs(tab_labels)
+    # Chat input
+    user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
     
-    # Generate Sample Plots
-    for i, tab in enumerate(tabs):
-        with tab:
-            fig = go.Figure()
-            x = ['2020', '2021', '2022', '2023']
-            y = np.random.randint(1000, 5000, size=4)
-            
-            fig.add_trace(go.Bar(
-                x=x, y=y,
-                marker_color='#00f7ff',
-                marker_line_color='#00f7ff',
-                marker_line_width=1
-            ))
-            
-            fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#00f7ff',
-                title=f"{buttons[i][0]} Trends",
-                xaxis_title="Year",
-                yaxis_title="Count"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Feedback Section
-    st.header("Feedback & Trivia")
-    with st.expander("Test Your Knowledge"):
-        q1 = st.radio("Q1: Qatar has zero road fatalities in 2022", ["Fact", "Fiction"])
-        q2 = st.radio("Q2: Doha has smart traffic light system", ["Fact", "Fiction"])
-        q3 = st.radio("Q3: Electric vehicles are tax-free in Qatar", ["Fact", "Fiction"])
-
-def accidents_page():
-    st.markdown('<h1 class="page-title">Accidents Analytics</h1>', unsafe_allow_html=True)
-    if st.button("← Back to Home"):
-        show_page('home')
-    # Initialize and run the dashboard from acc.py
-    dashboard = QatarAccidentsStreamlit()
-    dashboard.run_dashboard()
-
-def violations_page():
-    st.markdown('<h1 class="page-title">Violations Analytics</h1>', unsafe_allow_html=True)
-    if st.button("← Back to Home"):
-        show_page('home')
-    # Add your violations analysis content here
-
-# Add similar functions for other pages...
+    if user_input:
+        # Add user message to chat history
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        
+        # Process query with RAG and get response
+        with st.spinner("Processing..."):
+            response = process_query_with_rag(user_input)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+        
+        st.experimental_rerun()
 
 def main():
-    # Page routing
     if st.session_state.page == 'home':
         home_page()
-    elif st.session_state.page == 'accidents':
-        accidents_page()
-    elif st.session_state.page == 'violations':
-        violations_page()
-    # Add other page conditions...
 
 if __name__ == "__main__":
     main()
