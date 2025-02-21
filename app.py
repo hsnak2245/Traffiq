@@ -190,20 +190,15 @@ def home_page():
         col1, col2 = st.columns(2)
         
         buttons = [
-            ("🚑\nAccidents", "accidents", "https://accidents.streamlit.app/"),
-            ("🚔\nViolations", "violations", "https://violations.streamlit.app/"),
-            ("📇\nLicense", "license", "https://license.streamlit.app/"),
-            ("🚗\nVehicle", "vehicle", "https://vehicle.streamlit.app/")
+            ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
+            ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
+            ("📇 License", "license", "https://license.streamlit.app/"),
+            ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
         for i, (label, page, link) in enumerate(buttons):
-            icon, text = label.split('\n')
-            with col1 if i < 2 else col2:
-                if st.button(
-                    f'<div class="button-icon">{icon}</div>{text}',
-                    key=f"btn_{page}",
-                    use_container_width=True
-                ):
+            with col1 if i % 2 == 0 else col2:
+                if st.button(label, key=f"btn_{page}"):
                     st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
         # Chat Interface
