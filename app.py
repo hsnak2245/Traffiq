@@ -210,7 +210,7 @@ def process_query_with_rag(query):
         try:
             response = groq_client.chat.completions.create(
                 messages=messages,
-                model="mixtral-8x7b-32768",
+                model="llama-guard-3-8b",
                 temperature=0.7,
                 max_tokens=500,
                 top_p=0.9
@@ -249,7 +249,7 @@ def home_page():
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Chat Interface
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+       
         st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
         
         # Display chat history
