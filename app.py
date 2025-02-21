@@ -25,70 +25,76 @@ st.markdown("""
     padding: 2rem;
 }
 
+/* Import Space Grotesk */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
+
 /* Title styling */
 .page-title {
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(120deg, #ff6b6b, #4ecdc4);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #4ecdc4;
     text-align: center;
-    margin: 2rem 0;
-    font-size: 4rem;
-    font-weight: 800;
-    letter-spacing: -1px;
+    margin: 2rem 0 3rem 0;
+    font-size: 4.5rem;
+    font-weight: 700;
+    text-shadow: 
+        0 0 7px #4ecdc4,
+        0 0 10px #4ecdc4,
+        0 0 21px #4ecdc4,
+        0 0 42px rgba(78, 205, 196, 0.5);
+    animation: neon 1.5s ease-in-out infinite alternate;
 }
 
-.subtitle {
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #a0aec0;
-    text-align: center;
-    margin-bottom: 3rem;
-    font-size: 1.5rem;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+@keyframes neon {
+    from {
+        text-shadow: 
+            0 0 7px #4ecdc4,
+            0 0 10px #4ecdc4,
+            0 0 21px #4ecdc4,
+            0 0 42px rgba(78, 205, 196, 0.5);
+    }
+    to {
+        text-shadow: 
+            0 0 10px #4ecdc4,
+            0 0 15px #4ecdc4,
+            0 0 25px #4ecdc4,
+            0 0 45px rgba(78, 205, 196, 0.5);
+    }
 }
 
 /* Button grid styling */
 .button-container {
-    max-width: 800px;
+    max-width: 600px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
 .stButton > button {
     width: 100%;
-    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(78, 205, 196, 0.1) 100%) !important;
-    color: white !important;
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 16px !important;
-    padding: 1.8rem !important;
-    font-size: 1.3rem !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background-color: #2C3E50 !important;
+    color: #4ecdc4 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 1.2rem !important;
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
     transition: all 0.3s ease !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem !important;
+    height: 100px !important;
 }
 
 .stButton > button:hover {
-    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(78, 205, 196, 0.2) 100%) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    background-color: #34495E !important;
+    color: #5ddbcf !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* Chat container styling */
 .chat-container {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.08) 100%);
-    border-radius: 20px;
-    padding: 2.5rem;
+    padding: 2rem;
     margin: 3rem auto;
-    max-width: 800px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
 }
 
 .chat-title {
@@ -218,7 +224,7 @@ def process_query_with_rag(query):
 
 def home_page():
     st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Intelligent Traffic Management System for Qatar</p>', unsafe_allow_html=True)
+    # Removed subtitle
 
     # Create a container for better spacing
     with st.container():
