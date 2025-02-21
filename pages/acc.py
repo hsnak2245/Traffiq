@@ -39,11 +39,19 @@ class QatarAccidentsStreamlit:
         try:
             with open('zone_names.json', 'r') as f:
                 return json.load(f)
+        except FileNotFoundError:
+            st.warning("Zone names file not found. Please ensure 'zone_names.json' is available.")
+            return {}
         except Exception as e:
             st.warning(f"Could not load zone names: {e}")
             return {}
 
     def load_data(self):
+        # Check if accidents file exists
+        if not Path(self.accidents_file).is_file():
+            st.error(f"Accidents file '{self.accidents_file}' not found. Please ensure the file is available.")
+            return
+        
         # Load accidents data
         self.df = pd.read_csv(self.accidents_file, skipinitialspace=True)
         
@@ -58,12 +66,17 @@ class QatarAccidentsStreamlit:
         # Set current year to the most recent year
         self.current_year = self.df['ACCIDENT_YEAR'].max()
         
+        # Check if polygons file exists
+        if not Path(self.polygons_file).is_file():
+            st.warning(f"Polygon file '{self.polygons_file}' not found. Please ensure the file is available.")
+            return
+        
         # Load polygon data
         try:
             with open(self.polygons_file, 'r') as f:
                 self.zones_data = json.load(f)
-        except:
-            st.warning("Could not load polygon data")
+        except Exception as e:
+            st.warning(f"Could not load polygon data: {e}")
 
     def create_map(self, year):
         # Create base map
