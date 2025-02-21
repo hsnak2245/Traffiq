@@ -63,7 +63,7 @@ st.markdown("""
 }
 
 .stButton > button {
-    width: 100%;
+    width: 60%;
     background-color: #2C3E50 !important;
     color: #4ecdc4 !important;
     border: none !important;
@@ -84,12 +84,6 @@ st.markdown("""
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
-/* Chat container styling */
-.chat-container {
-    padding: 2rem;
-    margin: 3rem auto;
-    max-width: 600px;
-}
 
 .chat-title {
     color: #4ecdc4;
@@ -102,6 +96,7 @@ st.markdown("""
 .user-message {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
     color: white;
+    width: 50%; 
     padding: 1.2rem;
     border-radius: 16px;
     margin: 1rem 0;
@@ -113,6 +108,7 @@ st.markdown("""
     background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
     color: white;
     padding: 1.2rem;
+    width: 50%;
     border-radius: 16px;
     margin: 1rem 0;
     border: 1px solid rgba(78, 205, 196, 0.2);
