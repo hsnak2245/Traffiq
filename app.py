@@ -51,26 +51,32 @@ body {
 .nav-container {
     display: flex;
     justify-content: center;
-    gap: 1rem;
-    padding: 1rem;
-    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.nav-button {
-    background: rgba(51, 65, 85, 0.5);
-    border: 1px solid #475569;
-    color: #e2e8f0;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s;
+/* Button styling for navigation */
+.stButton > button {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    color: #e2e8f0 !important;
+    padding: 1rem 2rem !important;
+    border-radius: 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    width: 180px !important;
+    height: auto !important;
+    margin: 0 !important;
     backdrop-filter: blur(8px);
 }
 
-.nav-button:hover {
-    background: rgba(51, 65, 85, 0.8);
-    border-color: #60a5fa;
+.stButton > button:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(129, 140, 248, 0.2) 100%) !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
 }
 
 /* Chat interface */
@@ -209,16 +215,27 @@ def main():
     
     # Navigation
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    
+    # Create columns for the buttons
+    cols = st.columns(4)
+    
     nav_buttons = [
-        ("🚑 Accidents", "https://accidents.streamlit.app/"),
-        ("🚔 Violations", "https://violations.streamlit.app/"),
-        ("📇 License", "https://license.streamlit.app/"),
-        ("🚗 Vehicle", "https://vehicle.streamlit.app/")
+        ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
+        ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
+        ("📇 License", "license", "https://license.streamlit.app/"),
+        ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
     ]
     
-    for label, link in nav_buttons:
-        if st.button(label, key=f"nav_{link}", help=f"Navigate to {label}"):
-            st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+    # Place each button in its column
+    for idx, (label, page, url) in enumerate(nav_buttons):
+        with cols[idx]:
+            if st.button(label, key=f"btn_{page}"):
+                js = f"""
+                <script>
+                    window.open('{url}', '_blank');
+                </script>
+                """
+                st.markdown(js, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
