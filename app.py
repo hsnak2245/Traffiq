@@ -14,115 +14,102 @@ st.set_page_config(
 )
 
 # Load CSS with updated styling
+# Update the CSS section with this improved styling
 st.markdown("""
 <style>
 /* Main container */
 .main {
-    background: linear-gradient(135deg, #1a1f2e 0%, #2d1f3d 100%);
-    color: white;
+    background: #0a0e1a;
+    color: #e0e0e0;
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
 }
 
-/* Import Space Grotesk */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
-
 /* Title styling */
 .page-title {
     font-family: 'Space Grotesk', sans-serif;
-    color: #4ecdc4;
+    background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     text-align: center;
     margin: 2rem 0 3rem 0;
-    font-size: 4.5rem;
+    font-size: 3.5rem;
     font-weight: 700;
-    text-shadow: 
-        0 0 7px #4ecdc4,
-        0 0 10px #4ecdc4,
-        0 0 21px #4ecdc4,
-        0 0 42px rgba(78, 205, 196, 0.5);
-    animation: neon 1.5s ease-in-out infinite alternate;
-}
-
-@keyframes neon {
-    from {
-        text-shadow: 
-            0 0 7px #4ecdc4,
-            0 0 10px #4ecdc4,
-            0 0 21px #4ecdc4,
-            0 0 42px rgba(78, 205, 196, 0.5);
-    }
-    to {
-        text-shadow: 
-            0 0 10px #4ecdc4,
-            0 0 15px #4ecdc4,
-            0 0 25px #4ecdc4,
-            0 0 45px rgba(78, 205, 196, 0.5);
-    }
+    letter-spacing: -1px;
 }
 
 /* Button grid styling */
 .button-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
 .stButton > button {
     width: 100%;
-    background-color: #2C3E50 !important;
-    color: #4ecdc4 !important;
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%) !important;
+    color: white !important;
     border: none !important;
-    border-radius: 12px !important;
-    padding: 1.2rem !important;
-    font-size: 1.2rem !important;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    margin-bottom: 1rem !important;
-    height: 100px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem !important;
+    height: auto !important;
+    min-height: 100px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stButton > button:hover {
-    background-color: #34495E !important;
-    color: #5ddbcf !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%) !important;
 }
 
 /* Chat container styling */
 .chat-container {
     padding: 2rem;
     margin: 3rem auto;
-    max-width: 600px;
+    max-width: 800px;
+    background: rgba(16, 22, 36, 0.8);
+    border-radius: 24px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .chat-title {
-    color: #4ecdc4;
-    font-size: 1.8rem;
+    color: #00d2ff;
+    font-size: 1.5rem;
     margin-bottom: 2rem;
-    font-weight: 700;
+    font-weight: 600;
     text-align: center;
+    letter-spacing: -0.5px;
 }
 
 .user-message {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    background: rgba(42, 157, 244, 0.15);
     color: white;
-    padding: 1.2rem;
-    border-radius: 16px;
-    margin: 1rem 0;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 1.2rem 1.5rem;
+    border-radius: 18px;
+    margin: 1.5rem 0;
+    border: 1px solid rgba(42, 157, 244, 0.3);
+    backdrop-filter: blur(5px);
+    line-height: 1.6;
 }
 
 .bot-message {
-    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+    background: rgba(78, 205, 196, 0.15);
     color: white;
-    padding: 1.2rem;
-    border-radius: 16px;
-    margin: 1rem 0;
-    border: 1px solid rgba(78, 205, 196, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 1.2rem 1.5rem;
+    border-radius: 18px;
+    margin: 1.5rem 0;
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    backdrop-filter: blur(5px);
+    line-height: 1.6;
 }
 
 /* Chat input styling */
@@ -137,36 +124,37 @@ st.markdown("""
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: rgba(78, 205, 196, 0.6) !important;
-    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2) !important;
+    border-color: #00d2ff !important;
+    box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2) !important;
 }
 
-/* Hide Streamlit branding */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* Improved spacing and typography */
+body {
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
 }
 
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+/* Status indicators */
+.status-indicator {
+    padding: 0.5rem 1rem;
+    background: rgba(78, 205, 196, 0.2);
+    border-radius: 8px;
+    display: inline-block;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
 }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(78, 205, 196, 0.5);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(78, 205, 196, 0.7);
+/* Section dividers */
+.section-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.4), transparent);
+    margin: 2rem 0;
 }
 </style>
 """, unsafe_allow_html=True)
-
 # Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
