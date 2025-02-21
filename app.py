@@ -114,6 +114,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
     padding: 2rem;
+    margin: 0.5rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(12px);
     height: 100%;
