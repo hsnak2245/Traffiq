@@ -51,17 +51,18 @@ body {
 .feature-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: 2.5rem;
     max-width: 1000px;
-    margin: 0 auto;
-    padding: 1rem;
+    margin: 2rem auto;
+    padding: 2rem;
 }
 
 .feature-card {
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
     border: 1px solid rgba(6, 182, 212, 0.2);
     border-radius: 1rem;
-    padding: 1.5rem;
+    padding: 2rem;
+    margin: 0.5rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(8px);
     height: 100%;
