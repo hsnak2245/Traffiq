@@ -75,10 +75,10 @@ body::after {
     pointer-events: none;
 }
 
-/* Update existing styles to work with new background */
-.stApp {
-    background: transparent !important;
-}
+# /* Update existing styles to work with new background */
+# .stApp {
+#     background: transparent !important;
+# }
 
 .feature-grid {
     position: relative;
