@@ -97,7 +97,7 @@ body {
 
 .view-link {
     display: inline-block;
-    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+    background: linear-gradient(135deg, #0a4f6d 0%, #063c5a 100%);;
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
