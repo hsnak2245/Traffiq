@@ -22,12 +22,77 @@ st.markdown("""
 body {
     font-family: 'Inter', sans-serif;
     background: #0f172a;
+    position: relative;
+    overflow-x: hidden;
     color: #f8fafc;
 }
 
-.stApp {
-    background: #0f172a;
+/* Halftone overlay container */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 10% 0%, rgba(236, 72, 153, 0.3), transparent 50%),
+        radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.3), transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.3), transparent 50%);
+    z-index: -2;
 }
+
+/* Halftone dots pattern */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at center,
+            rgba(255, 255, 255, 0.1) 2px,
+            transparent 2px
+        );
+    background-size: 24px 24px;
+    background-position: 0 0;
+    mask-image: linear-gradient(to bottom,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.7) 50%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
+    z-index: -1;
+    opacity: 0.4;
+}
+
+/* Update existing styles to work with new background */
+.stApp {
+    background: transparent !important;
+}
+
+.feature-card {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-container {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+}
+
+/* Additional styling for improved contrast */
+.feature-title {
+    color: #38bdf8;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.feature-description {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 
 /* Header styling */
 .header {
@@ -190,79 +255,6 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #60a5fa;
 }
-/* Main background with halftone effect */
-body {
-    background: #0f172a;
-    position: relative;
-    overflow-x: hidden;
-}
-
-/* Halftone overlay container */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle at 10% 0%, rgba(236, 72, 153, 0.3), transparent 50%),
-        radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.3), transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.3), transparent 50%);
-    z-index: -2;
-}
-
-/* Halftone dots pattern */
-body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        radial-gradient(circle at center,
-            rgba(255, 255, 255, 0.1) 2px,
-            transparent 2px
-        );
-    background-size: 24px 24px;
-    background-position: 0 0;
-    mask-image: linear-gradient(to bottom,
-        rgba(0, 0, 0, 1) 0%,
-        rgba(0, 0, 0, 0.7) 50%,
-        rgba(0, 0, 0, 0.5) 100%
-    );
-    z-index: -1;
-    opacity: 0.4;
-}
-
-/* Update existing styles to work with new background */
-.stApp {
-    background: transparent !important;
-}
-
-.feature-card {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.chat-container {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(12px);
-}
-
-/* Additional styling for improved contrast */
-.feature-title {
-    color: #38bdf8;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.feature-description {
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
 </style>
 """, unsafe_allow_html=True)
 
