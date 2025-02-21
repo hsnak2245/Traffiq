@@ -88,6 +88,7 @@ body {
 .logo {
     font-size: 3rem;
     font-weight: 700;
+    color: white;
     background: linear-gradient(45deg, #38bdf8, #818cf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
