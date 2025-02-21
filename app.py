@@ -14,112 +14,158 @@ st.set_page_config(
 )
 
 # Load CSS with updated styling
-# Update the CSS section with this improved styling
 st.markdown("""
 <style>
 /* Main container */
 .main {
-    background: #0a0a2a;
-    color: #ffffff;
+    background: linear-gradient(135deg, #1a1f2e 0%, #2d1f3d 100%);
+    color: white;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
+
+/* Import Space Grotesk */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
 
 /* Title styling */
 .page-title {
     font-family: 'Space Grotesk', sans-serif;
-    color: #00f3ff;
+    color: #4ecdc4;
     text-align: center;
-    margin: 1rem 0 2rem 0;
-    font-size: 3rem;
+    margin: 2rem 0 3rem 0;
+    font-size: 4.5rem;
     font-weight: 700;
-    text-shadow: 0 0 15px #00f3ff;
+    text-shadow: 
+        0 0 7px #4ecdc4,
+        0 0 10px #4ecdc4,
+        0 0 21px #4ecdc4,
+        0 0 42px rgba(78, 205, 196, 0.5);
+    animation: neon 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes neon {
+    from {
+        text-shadow: 
+            0 0 7px #4ecdc4,
+            0 0 10px #4ecdc4,
+            0 0 21px #4ecdc4,
+            0 0 42px rgba(78, 205, 196, 0.5);
+    }
+    to {
+        text-shadow: 
+            0 0 10px #4ecdc4,
+            0 0 15px #4ecdc4,
+            0 0 25px #4ecdc4,
+            0 0 45px rgba(78, 205, 196, 0.5);
+    }
 }
 
 /* Button grid styling */
 .button-container {
-    max-width: 800px;
+    max-width: 600px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
     padding: 0 1rem;
 }
 
 .stButton > button {
     width: 100%;
-    background: linear-gradient(45deg, #00f3ff 0%, #ff00ff 50%, #d400ff 100%) !important;
-    color: white !important;
-    border: 2px solid rgba(0, 243, 255, 0.3) !important;
+    background-color: #2C3E50 !important;
+    color: #4ecdc4 !important;
+    border: none !important;
     border-radius: 12px !important;
-    padding: 0.8rem !important;
-    font-size: 1rem !important;
+    padding: 1.2rem !important;
+    font-size: 1.2rem !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-    height: 80px !important;
-    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem !important;
+    height: 100px !important;
 }
 
 .stButton > button:hover {
-    box-shadow: 0 0 25px rgba(212, 0, 255, 0.4);
-    transform: scale(1.05);
-    background: linear-gradient(45deg, #d400ff 0%, #ff00ff 50%, #00f3ff 100%) !important;
+    background-color: #34495E !important;
+    color: #5ddbcf !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
-/* Simplified Chat Container */
+/* Chat container styling */
 .chat-container {
-    margin: 2rem auto;
-    max-width: 800px;
-    padding: 0 1rem;
+    padding: 2rem;
+    margin: 3rem auto;
+    max-width: 600px;
+}
+
+.chat-title {
+    color: #4ecdc4;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    text-align: center;
 }
 
 .user-message {
-    background: rgba(0, 243, 255, 0.1);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
     color: white;
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 1.2rem;
+    border-radius: 16px;
     margin: 1rem 0;
-    border: 1px solid #00f3ff;
-    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .bot-message {
-    background: rgba(212, 0, 255, 0.1);
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
     color: white;
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 1.2rem;
+    border-radius: 16px;
     margin: 1rem 0;
-    border: 1px solid #d400ff;
-    box-shadow: 0 0 10px rgba(212, 0, 255, 0.2);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Chat input styling */
 .stTextInput > div > div > input {
     background: rgba(255, 255, 255, 0.05) !important;
     color: white !important;
-    border: 2px solid #d400ff !important;
-    border-radius: 12px !important;
-    padding: 0.8rem !important;
-    font-size: 1rem !important;
+    border: 2px solid rgba(78, 205, 196, 0.3) !important;
+    border-radius: 16px !important;
+    padding: 1.2rem !important;
+    font-size: 1.1rem !important;
+    transition: all 0.3s ease;
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: #00f3ff !important;
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3) !important;
+    border-color: rgba(78, 205, 196, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2) !important;
 }
 
-/* Neon glow animations */
-@keyframes button-glow {
-    0% { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
-    50% { box-shadow: 0 0 25px rgba(212, 0, 255, 0.4); }
-    100% { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
+/* Hide Streamlit branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-.stButton > button {
-    animation: button-glow 3s infinite;
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(78, 205, 196, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(78, 205, 196, 0.7);
 }
 </style>
 """, unsafe_allow_html=True)
-
 
 # Initialize session state
 if 'page' not in st.session_state:
@@ -129,7 +175,15 @@ if 'chat_history' not in st.session_state:
 
 @st.cache_data
 def load_knowledge_base():
-    data = pd.read_csv('info.md')
+    data = {
+        'message': [
+            "Qatar recorded a 15% decrease in traffic accidents in urban areas after implementing smart traffic systems.",
+            "Recent policy changes require mandatory defensive driving courses for new license applicants in Qatar.",
+            "Traffic safety indicators show peak accident times between 7-9 AM and 4-6 PM in major Qatar cities.",
+            "New traffic policy focuses on reducing accidents through AI-powered traffic management and stricter enforcement.",
+            "Qatar's road safety campaign resulted in 25% reduction in pedestrian accidents in residential areas.",
+        ]
+    }
     return pd.DataFrame(data)
 
 def process_query_with_rag(query):
@@ -168,13 +222,17 @@ def process_query_with_rag(query):
     except Exception as e:
         return "I apologize, but I encountered an error processing your query. Please try again."
 
-# Modified home_page function
 def home_page():
     st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
+    # Removed subtitle
 
-    # Button Grid
+    # Create a container for better spacing
     with st.container():
+        # Add the button-container class for centered, constrained width
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
+        
+        # 2x2 Button Grid
+        col1, col2 = st.columns(2)
         
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
@@ -183,35 +241,37 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for label, page, link in buttons:
-            if st.button(label, key=f"btn_{page}"):
-                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        for i, (label, page, link) in enumerate(buttons):
+            with col1 if i % 2 == 0 else col2:
+                if st.button(label, key=f"btn_{page}"):
+                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Simplified Chat Interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    
-    # Display chat history
-    for message in st.session_state.chat_history:
-        if message["role"] == "user":
-            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
+        # Chat Interface
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
+        
+        # Display chat history
+        for message in st.session_state.chat_history:
+            if message["role"] == "user":
+                st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
 
-    # Chat input
-    user_input = st.chat_input("Ask about Qatar traffic data...")
-    
-    if user_input:
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        # Chat input
+        user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
         
-        with st.spinner("Analyzing..."):
-            response = process_query_with_rag(user_input)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
+        if user_input:
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
+            
+            with st.spinner("Analyzing your query..."):
+                response = process_query_with_rag(user_input)
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+            
+            st.rerun()
         
-        st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def main():
     if st.session_state.page == 'home':
