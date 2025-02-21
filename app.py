@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
+from pages.acc import QatarAccidentsStreamlit
 
 # Load CSS
 with open('static/style.css') as f:
@@ -95,7 +96,9 @@ def accidents_page():
     st.markdown('<h1 class="page-title">Accidents Analytics</h1>', unsafe_allow_html=True)
     if st.button("← Back to Home"):
         show_page('home')
-    # Add your accidents analysis content here
+    # Initialize and run the dashboard from acc.py
+    dashboard = QatarAccidentsStreamlit()
+    dashboard.run_dashboard()
 
 def violations_page():
     st.markdown('<h1 class="page-title">Violations Analytics</h1>', unsafe_allow_html=True)
