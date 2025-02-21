@@ -25,6 +25,13 @@ body {
     position: relative;
     overflow-x: hidden;
     color: #f8fafc;
+    min-height: 100vh;
+}
+
+.stApp {
+    background: transparent !important;
+    position: relative;
+    z-index: 1;  /* Make sure content is above background */
 }
 
 /* Halftone overlay container */
@@ -39,7 +46,8 @@ body::before {
         radial-gradient(circle at 10% 0%, rgba(236, 72, 153, 0.3), transparent 50%),
         radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.3), transparent 50%),
         radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.3), transparent 50%);
-    z-index: -2;
+    z-index: 0;
+    pointer-events: none;
 }
 
 /* Halftone dots pattern */
@@ -62,8 +70,9 @@ body::after {
         rgba(0, 0, 0, 0.7) 50%,
         rgba(0, 0, 0, 0.5) 100%
     );
-    z-index: -1;
+    z-index: 0;
     opacity: 0.4;
+    pointer-events: none;
 }
 
 /* Update existing styles to work with new background */
@@ -71,10 +80,15 @@ body::after {
     background: transparent !important;
 }
 
-.feature-card {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.feature-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 2rem;
 }
 
 .chat-container {
@@ -103,17 +117,14 @@ body::after {
 }
 
 .logo {
-    font-size: 3rem;
-    font-weight: 700;
-    background: linear-gradient(45deg, #38bdf8, #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-align: center;
-    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
 }
 
 /* Feature Grid */
 .feature-grid {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2.5rem;
@@ -123,16 +134,11 @@ body::after {
 }
 
 .feature-card {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-    border: 1px solid rgba(6, 182, 212, 0.2);
-    border-radius: 1rem;
-    padding: 2rem;
-    margin: 0.5rem;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(8px);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .feature-card:hover {
@@ -184,12 +190,10 @@ body::after {
 
 /* Chat interface */
 .chat-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: rgba(30, 41, 59, 0.5);
-    border-radius: 1rem;
-    border: 1px solid #334155;
+.chat-container {
+    position: relative;
+    z-index: 2;
+    background: rgba(15, 23, 42, 0.7);
     backdrop-filter: blur(12px);
 }
 
