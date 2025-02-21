@@ -256,6 +256,67 @@ body {
     padding: 0.5rem 0 !important;
 }
 
+/*Adding effects to the chatbox*/
+/* Chat input container */
+section[data-testid="stChatInputContainer"] {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: transparent !important;
+    padding: 1rem !important;
+    z-index: 100 !important;
+}
+
+/* Target the textarea wrapper */
+.stChatInputContainer > div {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Target the actual input element */
+.stChatInputContainer textarea {
+    background: transparent !important;
+    border: 2px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 0.75rem !important;
+    color: #f8fafc !important;
+    font-size: 1rem !important;
+    min-height: 60px !important;
+    padding: 1rem !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.1),
+        0 0 20px rgba(56, 189, 248, 0.05) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Focus state */
+.stChatInputContainer textarea:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.2),
+        0 0 20px rgba(56, 189, 248, 0.1),
+        0 0 30px rgba(56, 189, 248, 0.05) !important;
+    outline: none !important;
+}
+
+/* Send button container */
+.stChatInputContainer > button {
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    background: transparent !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.1),
+        0 0 20px rgba(56, 189, 248, 0.05) !important;
+}
+
+/* Send button hover state */
+.stChatInputContainer > button:hover {
+    border-color: #38bdf8 !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.2),
+        0 0 20px rgba(56, 189, 248, 0.1),
+        0 0 30px rgba(56, 189, 248, 0.05) !important;
+}
+
 /* Hide Streamlit elements */
 #MainMenu, footer, header {display: none !important;}
 
