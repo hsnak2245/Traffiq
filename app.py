@@ -47,36 +47,68 @@ body {
     margin-bottom: 1rem;
 }
 
-/* Navigation */
-.nav-container {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    padding: 1.5rem;
-    max-width: 800px;
+/* Feature Grid */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 1000px;
     margin: 0 auto;
+    padding: 1rem;
 }
 
-/* Button styling for navigation */
-.stButton > button {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%) !important;
-    border: 1px solid rgba(56, 189, 248, 0.2) !important;
-    color: #e2e8f0 !important;
-    padding: 1rem 2rem !important;
-    border-radius: 1rem !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-    width: 180px !important;
-    height: auto !important;
-    margin: 0 !important;
+.feature-card {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
     backdrop-filter: blur(8px);
 }
 
-.stButton > button:hover {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(129, 140, 248, 0.2) 100%) !important;
-    border-color: rgba(56, 189, 248, 0.4) !important;
+.feature-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.feature-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature-title {
+    color: #fcd34d;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.feature-description {
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+/* View Button */
+.view-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+    color: #0f172a;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.view-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(252, 211, 77, 0.3);
 }
 
 /* Chat interface */
@@ -213,29 +245,52 @@ def main():
     st.markdown('<div class="header">', unsafe_allow_html=True)
     st.markdown('<h1 class="logo">TraffiQ</h1>', unsafe_allow_html=True)
     
-    # Navigation
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    
-    # Create columns for the buttons
-    cols = st.columns(4)
-    
-    nav_buttons = [
-        ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
-        ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
-        ("📇 License", "license", "https://license.streamlit.app/"),
-        ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
+    # Feature Grid
+    features = [
+        {
+            "icon": "🚑",
+            "title": "Accident Analytics",
+            "description": "Real-time accident data analysis with interactive visualizations and predictive insights for better emergency response.",
+            "url": "https://accidents.streamlit.app/",
+            "key": "accidents"
+        },
+        {
+            "icon": "🚔",
+            "title": "Traffic Violations",
+            "description": "Comprehensive tracking and analysis of traffic violations to improve enforcement and reduce infractions.",
+            "url": "https://violations.streamlit.app/",
+            "key": "violations"
+        },
+        {
+            "icon": "📇",
+            "title": "License Management",
+            "description": "Streamlined license processing system with verification tools and renewal tracking capabilities.",
+            "url": "https://license.streamlit.app/",
+            "key": "license"
+        },
+        {
+            "icon": "🚗",
+            "title": "Vehicle Registry",
+            "description": "Centralized vehicle database with registration status, inspection records, and ownership history.",
+            "url": "https://vehicle.streamlit.app/",
+            "key": "vehicle"
+        }
     ]
     
-    # Place each button in its column
-    for idx, (label, page, url) in enumerate(nav_buttons):
-        with cols[idx]:
-            if st.button(label, key=f"btn_{page}"):
-                js = f"""
-                <script>
-                    window.open('{url}', '_blank');
-                </script>
-                """
-                st.markdown(js, unsafe_allow_html=True)
+    st.markdown('<div class="feature-grid">', unsafe_allow_html=True)
+    
+    # Create feature cards
+    for feature in features:
+        st.markdown(f'''
+            <div class="feature-card">
+                <div class="feature-icon">{feature["icon"]}</div>
+                <div class="feature-title">{feature["title"]}</div>
+                <div class="feature-description">{feature["description"]}</div>
+                <button class="view-button" onclick="window.open('{feature["url"]}', '_blank')">
+                    View Dashboard
+                </button>
+            </div>
+        ''', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
