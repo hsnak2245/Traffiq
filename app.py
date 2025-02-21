@@ -6,68 +6,119 @@ from groq import Groq
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 groq_client = Groq(api_key=GROQ_API_KEY)
 
+# Configure page
+st.set_page_config(
+    page_title="TraffiQ",
+    page_icon="🚦",
+    layout="wide"
+)
+
 # Load CSS
 st.markdown("""
 <style>
+/* Main container */
+.main {
+    background-color: #1a1f2e;
+    color: white;
+}
+
+/* Title styling */
 .page-title {
-    font-family: 'Arial', sans-serif;
-    color: #333;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: white;
     text-align: center;
-    margin-top: 20px;
-    margin-bottom: 30px;
+    margin: 2rem 0;
+    font-size: 3.5rem;
+    font-weight: 700;
 }
 
-.button-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 30px;
+.subtitle {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #a0aec0;
+    text-align: center;
+    margin-bottom: 3rem;
+    font-size: 1.5rem;
 }
 
-.stButton button {
+/* Button grid styling */
+.stButton > button {
     width: 100%;
-    padding: 20px;
-    font-size: 1.2em;
-    background-color: #f0f2f6;
-    border: none;
-    border-radius: 10px;
-    transition: all 0.3s ease;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 1.5rem !important;
+    font-size: 1.2rem !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease !important;
 }
 
-.stButton button:hover {
-    background-color: #e0e2e6;
+.stButton > button:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
     transform: translateY(-2px);
 }
 
+.button-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Chat container styling */
 .chat-container {
-    margin-top: 30px;
-    padding: 20px;
-    border-radius: 10px;
-    background-color: #f9f9f9;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.chat-title {
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
 }
 
 .user-message {
-    background-color: #e3f2fd;
-    padding: 10px;
-    border-radius: 10px;
-    margin: 5px 0;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .bot-message {
-    background-color: #f5f5f5;
-    padding: 10px;
-    border-radius: 10px;
-    margin: 5px 0;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.ai-response {
-    background-color: #f5f5f5;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 10px;
-    border-left: 4px solid #2196F3;
+/* Chat input styling */
+.stTextInput > div > div > input {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
 }
+
+.stTextInput > div > div > input:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Hide Streamlit branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -77,11 +128,8 @@ if 'page' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Load simulated knowledge base
 @st.cache_data
 def load_knowledge_base():
-    # In a real implementation, this would load from info.txt
-    # For now, we'll use a DataFrame to simulate the knowledge base
     data = {
         'message': [
             "Qatar recorded a 15% decrease in traffic accidents in urban areas after implementing smart traffic systems.",
@@ -95,10 +143,7 @@ def load_knowledge_base():
 
 def process_query_with_rag(query):
     try:
-        # Load knowledge base
         social_updates_df = load_knowledge_base()
-        
-        # Find relevant context
         relevant_updates = social_updates_df[
             social_updates_df['message'].str.contains('|'.join(query.split()), case=False, na=False)
         ]
@@ -127,53 +172,61 @@ def process_query_with_rag(query):
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"AI processing error: {str(e)}"
+            return "I apologize, but I'm having trouble connecting to the AI service. Please try again in a moment."
             
     except Exception as e:
-        return f"Error processing query: {str(e)}"
+        return "I apologize, but I encountered an error processing your query. Please try again."
 
 def home_page():
     st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
-    st.markdown('<h3 class="page-title">Traffic Intelligence for Qatar</h3>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Traffic Intelligence for Qatar</p>', unsafe_allow_html=True)
 
-    # 2x2 Button Grid
-    col1, col2 = st.columns(2)
-    buttons = [
-        ("Accidents 🚑", "accidents", "https://accidents.streamlit.app/"),
-        ("Violations 🚔", "violations", "https://violations.streamlit.app/"),
-        ("License 📇", "license", "https://license.streamlit.app/"),
-        ("Vehicle 🚗", "vehicle", "https://vehicle.streamlit.app/")
-    ]
+    # Create a container for better spacing
+    main_container = st.container()
     
-    for i, (label, page, link) in enumerate(buttons):
-        with col1 if i < 2 else col2:
-            if st.button(label, key=f"btn_{page}", use_container_width=True):
-                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
-
-    # Chat Interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    st.markdown("### Traffic Safety Assistant")
-    
-    # Display chat history
-    for message in st.session_state.chat_history:
-        if message["role"] == "user":
-            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
-
-    # Chat input
-    user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
-    
-    if user_input:
-        # Add user message to chat history
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+    with main_container:
+        # 2x2 Button Grid with improved layout
+        col1, col2 = st.columns(2)
         
-        # Process query with RAG and get response
-        with st.spinner("Processing..."):
-            response = process_query_with_rag(user_input)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
+        buttons = [
+            ("🚑\nAccidents", "accidents", "https://accidents.streamlit.app/"),
+            ("🚔\nViolations", "violations", "https://violations.streamlit.app/"),
+            ("📇\nLicense", "license", "https://license.streamlit.app/"),
+            ("🚗\nVehicle", "vehicle", "https://vehicle.streamlit.app/")
+        ]
         
-        st.experimental_rerun()
+        for i, (label, page, link) in enumerate(buttons):
+            icon, text = label.split('\n')
+            with col1 if i < 2 else col2:
+                if st.button(
+                    f'<div class="button-icon">{icon}</div>{text}',
+                    key=f"btn_{page}",
+                    use_container_width=True
+                ):
+                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+
+        # Chat Interface
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
+        
+        # Display chat history
+        for message in st.session_state.chat_history:
+            if message["role"] == "user":
+                st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
+
+        # Chat input
+        user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
+        
+        if user_input:
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
+            
+            with st.spinner("Analyzing your query..."):
+                response = process_query_with_rag(user_input)
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+            
+            st.rerun()
 
 def main():
     if st.session_state.page == 'home':
