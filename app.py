@@ -62,6 +62,7 @@ st.markdown("""
     gap: 1rem;
     margin: 0 auto;
     padding: 0 1rem;
+    flex-wrap: wrap; /* Ensure buttons wrap if they overflow */
 }
 
 .stButton > button {
@@ -77,6 +78,7 @@ st.markdown("""
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     margin-bottom: 1rem !important;
     height: auto !important;
+    display: inline-block; /* Ensure buttons are inline */
 }
 
 .stButton > button:hover {
@@ -115,6 +117,20 @@ st.markdown("""
     margin: 1rem 0;
     border: 1px solid rgba(78, 205, 196, 0.2);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Chat container styling */
+.chat-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Chat input styling */
@@ -238,7 +254,7 @@ def home_page():
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Chat Interface
-       
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
         
         # Display chat history
