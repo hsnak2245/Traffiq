@@ -95,6 +95,26 @@ body {
     margin-bottom: 1rem;
     position: relative;
     z-index: 2;
+    text-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.5),
+        0 0 20px rgba(56, 189, 248, 0.3),
+        0 0 30px rgba(129, 140, 248, 0.2);
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 
+            0 0 10px rgba(56, 189, 248, 0.5),
+            0 0 20px rgba(56, 189, 248, 0.3),
+            0 0 30px rgba(129, 140, 248, 0.2);
+    }
+    to {
+        text-shadow: 
+            0 0 20px rgba(56, 189, 248, 0.6),
+            0 0 30px rgba(56, 189, 248, 0.4),
+            0 0 40px rgba(129, 140, 248, 0.3);
+    }
 }
 
 /* Feature Grid */
