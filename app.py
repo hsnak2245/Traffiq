@@ -88,7 +88,6 @@ body {
 .logo {
     font-size: 3rem;
     font-weight: 700;
-    color: white;
     background: linear-gradient(45deg, #38bdf8, #818cf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -197,9 +196,10 @@ body {
 /* Chat interface */
 .chat-container {
     max-width: 800px;
+    max-height: 
     margin: 2rem auto;
     padding: 2rem;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(15, 23, 42, 0);
     border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(12px);
@@ -235,12 +235,25 @@ body {
     border-radius: 0.75rem !important;
     color: #f8fafc !important;
     font-size: 1rem !important;
-    padding: 1rem !important;
+    padding: 1.5rem !important;
+    height: 3.5rem !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.1),
+        0 0 20px rgba(56, 189, 248, 0.05) !important;
+    transition: all 0.3s ease !important;
 }
 
 .stTextInput > div > div > input:focus {
     border-color: #60a5fa !important;
     box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+    box-shadow: 
+        0 0 10px rgba(56, 189, 248, 0.2),
+        0 0 20px rgba(56, 189, 248, 0.1),
+        0 0 30px rgba(56, 189, 248, 0.05) !important;
+    outline: none !important;
+}
+.stTextInput > div {
+    padding: 0.5rem 0 !important;
 }
 
 /* Hide Streamlit elements */
