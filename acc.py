@@ -211,7 +211,7 @@ class QatarAccidentsStreamlit:
             
             # Create and display map using streamlit-folium
             st_map = self.create_map(year)
-            st_folium(st_map, width=700, height=500)
+            st_folium(st_map, width=900, height=500)
 
         with col_stats:
             st.markdown("<h3 style='color: #FF00FF;'>Zone Statistics</h3>", unsafe_allow_html=True)

@@ -3,10 +3,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from pages.acc import QatarAccidentsStreamlit
+from acc import QatarAccidentsStreamlit
 
 # Load CSS
-with open('static/style.css') as f:
+with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # Initialize session state for navigation
