@@ -58,8 +58,8 @@ body {
 }
 
 .feature-card {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 1px solid rgba(6, 182, 212, 0.2);
     border-radius: 1rem;
     padding: 1.5rem;
     transition: all 0.3s ease;
@@ -68,8 +68,8 @@ body {
 
 .feature-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
-    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.4);
 }
 
 .feature-icon {
@@ -78,7 +78,7 @@ body {
 }
 
 .feature-title {
-    color: #fcd34d;
+    color: #06b6d4;
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
@@ -92,23 +92,22 @@ body {
 }
 
 /* View Button */
-.view-button {
-    display: inline-block;
-    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-    color: #0f172a;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
+.stButton > button {
+    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    border: none !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    width: auto !important;
 }
 
-.view-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(252, 211, 77, 0.3);
+.stButton > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3) !important;
 }
 
 /* Chat interface */
@@ -241,62 +240,56 @@ def process_query_with_rag(query):
         return "I apologize, but I encountered an error processing your query. Please try again."
 
 def main():
-    # Header
-    st.markdown('<div class="header">', unsafe_allow_html=True)
     st.markdown('<h1 class="logo">TraffiQ</h1>', unsafe_allow_html=True)
     
     # Feature Grid
+    st.markdown('<div class="feature-grid">', unsafe_allow_html=True)
+    
     features = [
         {
             "icon": "🚑",
             "title": "Accident Analytics",
             "description": "Real-time accident data analysis with interactive visualizations and predictive insights for better emergency response.",
-            "url": "https://accidents.streamlit.app/",
-            "key": "accidents"
+            "url": "https://accidents.streamlit.app/"
         },
         {
             "icon": "🚔",
-            "title": "Traffic Violations",
+            "title": "Violations Analytics",
             "description": "Comprehensive tracking and analysis of traffic violations to improve enforcement and reduce infractions.",
-            "url": "https://violations.streamlit.app/",
-            "key": "violations"
+            "url": "https://violations.streamlit.app/"
         },
         {
             "icon": "📇",
-            "title": "License Management",
+            "title": "License Analytics",
             "description": "Streamlined license processing system with verification tools and renewal tracking capabilities.",
-            "url": "https://license.streamlit.app/",
-            "key": "license"
+            "url": "https://license.streamlit.app/"
         },
         {
             "icon": "🚗",
-            "title": "Vehicle Registry",
+            "title": "Vehicle Analytics",
             "description": "Centralized vehicle database with registration status, inspection records, and ownership history.",
-            "url": "https://vehicle.streamlit.app/",
-            "key": "vehicle"
+            "url": "https://vehicle.streamlit.app/"
         }
     ]
     
-    st.markdown('<div class="feature-grid">', unsafe_allow_html=True)
-    
-    # Create feature cards
-    for feature in features:
-        st.markdown(f'''
-            <div class="feature-card">
-                <div class="feature-icon">{feature["icon"]}</div>
-                <div class="feature-title">{feature["title"]}</div>
-                <div class="feature-description">{feature["description"]}</div>
-                <button class="view-button" onclick="window.open('{feature["url"]}', '_blank')">
-                    View Dashboard
-                </button>
-            </div>
-        ''', unsafe_allow_html=True)
+    # Create feature cards using columns
+    cols = st.columns(2)
+    for idx, feature in enumerate(features):
+        with cols[idx % 2]:
+            st.markdown(f'''
+                <div class="feature-card">
+                    <div class="feature-icon">{feature["icon"]}</div>
+                    <div class="feature-title">{feature["title"]}</div>
+                    <div class="feature-description">{feature["description"]}</div>
+                </div>
+            ''', unsafe_allow_html=True)
+            if st.button("View Dashboard", key=f"btn_{idx}"):
+                st.markdown(f'<script>window.open("{feature["url"]}", "_blank");</script>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Chat Interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
     
     # Display chat history
     for message in st.session_state.chat_history:
