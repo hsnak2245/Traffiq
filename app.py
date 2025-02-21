@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from groq import Groq
 
+
 # Initialize Groq client
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -10,150 +11,115 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 st.set_page_config(
     page_title="TraffiQ",
     page_icon="🚦",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
-# Cyberpunk CSS
+# Load CSS
 st.markdown("""
 <style>
-:root {
-    --neon-blue: #00f3ff;
-    --neon-violet: #8a2be2;
-    --alert-red: #ff0747;
-    --dark-bg: #000000;
-}
-
-* {
-    font-family: 'Space Mono', monospace;
-}
-
+/* Main container */
 .main {
-    background-color: var(--dark-bg);
+    background-color: #1a1f2e;
     color: white;
 }
 
-/* Gradient Title */
+/* Title styling */
 .page-title {
-    background: linear-gradient(45deg, var(--neon-blue), var(--neon-violet));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    font-size: 4rem;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: white;
     text-align: center;
-    text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
     margin: 2rem 0;
-    letter-spacing: -0.05em;
+    font-size: 3.5rem;
+    font-weight: 700;
 }
 
 .subtitle {
-    color: rgba(255, 255, 255, 0.7);
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #a0aec0;
     text-align: center;
-    font-size: 1.2rem;
     margin-bottom: 3rem;
-    border-bottom: 1px solid var(--neon-blue);
-    padding-bottom: 1rem;
-    width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
+    font-size: 1.5rem;
 }
 
-/* Holographic Button Grid */
+/* Button grid styling */
 .stButton > button {
-    background: rgba(0, 0, 0, 0.7) !important;
-    border: 1px solid var(--neon-blue) !important;
-    border-radius: 8px !important;
-    color: var(--neon-blue) !important;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
     padding: 1.5rem !important;
-    margin: 0.5rem;
-    backdrop-filter: blur(12px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+    font-size: 1.2rem !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease !important;
 }
 
 .stButton > button:hover {
-    background: rgba(0, 243, 255, 0.1) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 0 25px var(--neon-blue);
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-2px);
 }
 
 .button-icon {
-    font-size: 2.5rem;
-    filter: drop-shadow(0 0 5px var(--neon-blue));
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
-/* Cyber Chat Interface */
+/* Chat container styling */
 .chat-container {
-    background: linear-gradient(145deg, rgba(0, 243, 255, 0.05), rgba(138, 43, 226, 0.05));
-    border: 1px solid var(--neon-blue);
-    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
     padding: 2rem;
-    margin: 2rem 0;
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+    margin-top: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .chat-title {
-    color: var(--neon-blue);
-    font-size: 1.8rem;
+    color: white;
+    font-size: 1.5rem;
     margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    font-weight: 600;
 }
 
 .user-message {
-    background: rgba(0, 243, 255, 0.08);
-    border-left: 4px solid var(--neon-blue);
-    color: rgba(255, 255, 255, 0.9);
-    padding: 1.2rem;
-    margin: 1rem 0;
-    border-radius: 6px;
-    animation: slideIn 0.3s ease;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .bot-message {
-    background: rgba(138, 43, 226, 0.08);
-    border-left: 4px solid var(--neon-violet);
-    color: rgba(255, 255, 255, 0.9);
-    padding: 1.2rem;
-    margin: 1rem 0;
-    border-radius: 6px;
-    animation: slideIn 0.3s ease;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes slideIn {
-    from { transform: translateX(20px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-/* Cyber Input */
-.stTextInput>div>div>input {
-    background: rgba(0, 0, 0, 0.7) !important;
-    color: var(--neon-blue) !important;
-    border: 1px solid var(--neon-blue) !important;
-    border-radius: 8px !important;
+/* Chat input styling */
+.stTextInput > div > div > input {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
     padding: 1rem !important;
-    font-size: 1.1rem !important;
 }
 
-.stTextInput>div>div>input:focus {
-    box-shadow: 0 0 15px var(--neon-blue) !important;
+.stTextInput > div > div > input:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
 }
 
-/* Alert Highlights */
-.red-alert {
-    color: var(--alert-red);
-    text-shadow: 0 0 10px rgba(255, 7, 71, 0.3);
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-/* Hide Streamlit elements */
-#MainMenu, footer, .stDeployButton { display: none; }
+/* Hide Streamlit branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -213,63 +179,55 @@ def process_query_with_rag(query):
         return "I apologize, but I encountered an error processing your query. Please try again."
 
 def home_page():
-    st.markdown('<h1 class="page-title">TRAFFIQ</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">NEURAL TRAFFIC MANAGEMENT SYSTEM</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Traffic Intelligence for Qatar</p>', unsafe_allow_html=True)
 
+    # Create a container for better spacing
     main_container = st.container()
+    
     with main_container:
+        # 2x2 Button Grid with improved layout
         col1, col2 = st.columns(2)
         
         buttons = [
-            ("🚑", "ACCIDENT ANALYSIS", "#ff0747"),
-            ("🚔", "VIOLATION RECORDS", "#00f3ff"),
-            ("📇", "LICENSE VERIFICATION", "#8a2be2"),
-            ("🚗", "VEHICLE REGISTRY", "#00f3ff")
+            ("🚑\nAccidents", "accidents", "https://accidents.streamlit.app/"),
+            ("🚔\nViolations", "violations", "https://violations.streamlit.app/"),
+            ("📇\nLicense", "license", "https://license.streamlit.app/"),
+            ("🚗\nVehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        for i, (icon, text, color) in enumerate(buttons):
+        for i, (label, page, link) in enumerate(buttons):
+            icon, text = label.split('\n')
             with col1 if i < 2 else col2:
-                st.markdown(f"""
-                    <style>
-                        .btn-{i} {{
-                            --hover-color: {color}26;
-                            --border-color: {color};
-                        }}
-                        .btn-{i}:hover {{
-                            box-shadow: 0 0 25px {color} !important;
-                        }}
-                    </style>
-                """, unsafe_allow_html=True)
-                
                 if st.button(
-                    f'<div class="button-icon">{icon}</div><div>{text}</div>',
-                    key=f"btn_{i}",
+                    f'<div class="button-icon">{icon}</div>{text}',
+                    key=f"btn_{page}",
                     use_container_width=True
                 ):
                     st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
         # Chat Interface
-        with st.container():
-            st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-            st.markdown('<div class="chat-title">📡 LIVE QUERY INTERFACE</div>', unsafe_allow_html=True)
-            
-            for message in st.session_state.chat_history:
-                if message["role"] == "user":
-                    st.markdown(f'<div class="user-message">📡 USER: {message["content"]}</div>', unsafe_allow_html=True)
-                else:
-                    content = message["content"].replace("urgent", '<span class="red-alert">URGENT</span>')
-                    st.markdown(f'<div class="bot-message">🤖 TRAFFIQ: {content}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
+        
+        # Display chat history
+        for message in st.session_state.chat_history:
+            if message["role"] == "user":
+                st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
 
-            user_input = st.chat_input("SYSTEM QUERY: Ask about traffic patterns, safety protocols, or policy updates...")
+        # Chat input
+        user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
+        
+        if user_input:
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
             
-            if user_input:
-                st.session_state.chat_history.append({"role": "user", "content": user_input})
-                
-                with st.spinner("🌀 PROCESSING QUERY..."):
-                    response = process_query_with_rag(user_input)
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
-                
-                st.rerun()
+            with st.spinner("Analyzing your query..."):
+                response = process_query_with_rag(user_input)
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+            
+            st.rerun()
 
 def main():
     if st.session_state.page == 'home':
