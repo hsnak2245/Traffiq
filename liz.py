@@ -28,7 +28,6 @@ class LicenseDashboard:
             self.license_df['MONTH'] = self.license_df['FIRST_ISSUEDATE'].dt.month
             self.license_df['YEAR'] = self.license_df['FIRST_ISSUEDATE'].dt.year
         except Exception as e:
-            logging.error("Error loading data: %s", e)
             st.error("Error loading data. Please check the log file for details.")
     
     def create_license_line_chart(self, selected_category, selected_year):
@@ -57,7 +56,6 @@ class LicenseDashboard:
             )
             return fig
         except Exception as e:
-            logging.error(f"Error creating line chart: {e}")
             return None
 
     def create_age_bubble_chart(self):
@@ -89,7 +87,6 @@ class LicenseDashboard:
             )
             return fig
         except Exception as e:
-            logging.error(f"Error creating bubble chart: {e}")
             return None
 
     def create_annual_license_chart(self):
@@ -118,7 +115,6 @@ class LicenseDashboard:
             )
             return fig
         except Exception as e:
-            logging.error(f"Error creating annual license chart: {e}")
             return None
 
     def run_dashboard(self):
@@ -143,22 +139,29 @@ class LicenseDashboard:
             color: #00FFFF;
         }
         .home-button {
-            background-color: #FF00FF;
             color: white;
-            padding: 10px 20px;
+            padding: 5px 10px;
             border-radius: 5px;
             text-decoration: none;
             font-weight: bold;
+            display: flex;
+            align-items: center;
         }
         .home-button:hover {
-            background-color: #00FFFF;
+            color: #00FFFF;
+        }
+        .home-button-icon {
+            margin-right: 5px;
         }
         </style>
         """, unsafe_allow_html=True)
 
         # Home button
         st.markdown("""
-        <a href="https://traffiq.streamlit.app/" class="home-button">Home</a>
+        <a href="https://traffiq.streamlit.app/" class="home-button">
+            <span class="home-button-icon">🏠</span>
+            <span>Home</span>
+        </a>
         """, unsafe_allow_html=True)
 
         # Title
