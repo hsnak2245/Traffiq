@@ -45,7 +45,8 @@ st.markdown("""
 
 /* Button grid styling */
 .stButton > button {
-    width: 65%;
+    width: 80%;  /* Reduced width */
+    margin: 0 auto;  /* Centered */
     background: rgba(0, 255, 255, 0.1);
     color: white !important;
     border: 1px solid rgba(0, 255, 255, 0.2) !important;
@@ -69,7 +70,17 @@ st.markdown("""
     display: block;
 }
 
-
+/* Chat container styling */
+.chat-container {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem auto;  /* Centered */
+    width: 80%;  /* Reduced width */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
 
 .chat-title {
     color: white;
@@ -85,8 +96,6 @@ st.markdown("""
     border-radius: 12px;
     margin: 0.5rem 0;
     border: 1px solid rgba(59, 130, 246, 0.2);
-    width: 70%;
-    align-self: flex-end;
 }
 
 .bot-message {
@@ -96,8 +105,6 @@ st.markdown("""
     border-radius: 12px;
     margin: 0.5rem 0;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 70%;
-    align-self: flex-start;
 }
 
 /* Chat input styling */
@@ -183,7 +190,7 @@ def home_page():
     main_container = st.container()
     
     with main_container:
-        # 1x4 Button Grid with improved layout
+        # 4x1 Button Grid with improved layout
         buttons = [
             ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
             ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
@@ -191,11 +198,9 @@ def home_page():
             ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
         ]
         
-        cols = st.columns(4)
-        for idx, (label, page, link) in enumerate(buttons):
-            with cols[idx]:
-                if st.button(label, key=f"btn_{page}"):
-                    st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+        for label, page, link in buttons:
+            if st.button(label, key=f"btn_{page}"):
+                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
 
         # Chat Interface
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
