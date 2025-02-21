@@ -45,7 +45,7 @@ st.markdown("""
 
 /* Button grid styling */
 .stButton > button {
-    width: 100%;
+    width: 65%;
     background: rgba(0, 255, 255, 0.1);
     color: white !important;
     border: 1px solid rgba(0, 255, 255, 0.2) !important;
@@ -69,16 +69,7 @@ st.markdown("""
     display: block;
 }
 
-/* Chat container styling */
-.chat-container {
-    /* Removed background-color and border properties */
-    border-radius: 16px;
-    padding: 2rem;
-    margin-top: 2rem;
-    /* Removed border property */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
+
 
 .chat-title {
     color: white;
@@ -94,6 +85,8 @@ st.markdown("""
     border-radius: 12px;
     margin: 0.5rem 0;
     border: 1px solid rgba(59, 130, 246, 0.2);
+    width: 70%;
+    align-self: flex-end;
 }
 
 .bot-message {
@@ -103,6 +96,8 @@ st.markdown("""
     border-radius: 12px;
     margin: 0.5rem 0;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 70%;
+    align-self: flex-start;
 }
 
 /* Chat input styling */
