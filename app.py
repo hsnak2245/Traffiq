@@ -13,170 +13,143 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load CSS with updated styling
+# Modern UI styling
 st.markdown("""
 <style>
-/* Main container */
-.main {
-    background: linear-gradient(135deg, #1a1f2e 0%, #2d1f3d 100%);
-    color: white;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Global styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
 }
 
-/* Import Space Grotesk */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
+.stApp {
+    background: #0f172a;
+}
 
-/* Title styling */
-.page-title {
-    font-family: 'Space Grotesk', sans-serif;
-    color: #4ecdc4;
-    text-align: center;
-    margin: 2rem 0 3rem 0;
-    font-size: 4.5rem;
+/* Header styling */
+.header {
+    background: linear-gradient(to right, #1e293b, #0f172a);
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #334155;
+}
+
+.logo {
+    font-size: 3rem;
     font-weight: 700;
+    background: linear-gradient(45deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    margin-bottom: 1rem;
 }
 
-@keyframes neon {
-    from {
-        text-shadow: 
-            0 0 7px #4ecdc4,
-            0 0 10px #4ecdc4,
-            0 0 21px #4ecdc4,
-            0 0 42px rgba(78, 205, 196, 0.5);
-    }
-    to {
-        text-shadow: 
-            0 0 10px #4ecdc4,
-            0 0 15px #4ecdc4,
-            0 0 25px #4ecdc4,
-            0 0 45px rgba(78, 205, 196, 0.5);
-    }
-}
-
-/* Button container styling */
-.button-container {
+/* Navigation */
+.nav-container {
     display: flex;
     justify-content: center;
     gap: 1rem;
-    margin: 0 auto;
-    padding: 0 1rem;
-    flex-wrap: wrap; /* Ensure buttons wrap if they overflow */
+    padding: 1rem;
+    flex-wrap: wrap;
 }
 
-.stButton > button {
-    width: auto !important;
-    background-color: #2C3E50 !important;
-    color: #4ecdc4 !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 0.8rem 1.2rem !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    margin-bottom: 1rem !important;
-    height: auto !important;
-    display: inline-block; /* Ensure buttons are inline */
+.nav-button {
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
 }
 
-.stButton > button:hover {
-    background-color: #34495E !important;
-    color: #5ddbcf !important;
+.nav-button:hover {
+    background: rgba(51, 65, 85, 0.8);
+    border-color: #60a5fa;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
-.chat-title {
-    color: #4ecdc4;
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
-    font-weight: 700;
-    text-align: center;
+/* Chat interface */
+.chat-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 1rem;
+    border: 1px solid #334155;
+    backdrop-filter: blur(12px);
+}
+
+.message {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    line-height: 1.5;
 }
 
 .user-message {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-    color: white;
-    width: 50%; 
-    padding: 1.2rem;
-    border-radius: 16px;
-    margin: 1rem 0;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    margin-left: auto;
+    width: 80%;
 }
 
 .bot-message {
-    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
-    color: white;
-    padding: 1.2rem;
-    width: 50%;
-    border-radius: 16px;
-    margin: 1rem 0;
-    border: 1px solid rgba(78, 205, 196, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: rgba(129, 140, 248, 0.1);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    margin-right: auto;
+    width: 80%;
 }
 
-/* Chat container styling */
-.chat-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-/* Chat input styling */
+/* Input styling */
 .stTextInput > div > div > input {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: white !important;
-    border: 2px solid rgba(78, 205, 196, 0.3) !important;
-    border-radius: 16px !important;
-    padding: 1.2rem !important;
-    font-size: 1.1rem !important;
-    transition: all 0.3s ease;
+    background: rgba(30, 41, 59, 0.5) !important;
+    border: 1px solid #475569 !important;
+    border-radius: 0.75rem !important;
+    color: #f8fafc !important;
+    font-size: 1rem !important;
+    padding: 1rem !important;
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: rgba(78, 205, 196, 0.6) !important;
-    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2) !important;
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
 }
 
-/* Hide Streamlit branding */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
+/* Hide Streamlit elements */
+#MainMenu, footer, header {display: none !important;}
 
-/* Custom scrollbar */
+/* Spinner */
+.stSpinner > div > div {
+    border-color: #60a5fa !important;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    background: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(78, 205, 196, 0.5);
-    border-radius: 4px;
+    background: #475569;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(78, 205, 196, 0.7);
+    background: #60a5fa;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'page' not in st.session_state:
-    st.session_state.page = 'home'
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
@@ -229,57 +202,55 @@ def process_query_with_rag(query):
     except Exception as e:
         return "I apologize, but I encountered an error processing your query. Please try again."
 
-def home_page():
-    st.markdown('<h1 class="page-title">TraffiQ</h1>', unsafe_allow_html=True)
-    # Removed subtitle
-
-    # Create a container for better spacing
-    with st.container():
-        # Add the button-container class for centered, constrained width
-        st.markdown('<div class="button-container">', unsafe_allow_html=True)
-        
-        # Single row of buttons
-        buttons = [
-            ("🚑 Accidents", "accidents", "https://accidents.streamlit.app/"),
-            ("🚔 Violations", "violations", "https://violations.streamlit.app/"),
-            ("📇 License", "license", "https://license.streamlit.app/"),
-            ("🚗 Vehicle", "vehicle", "https://vehicle.streamlit.app/")
-        ]
-        
-        for label, page, link in buttons:
-            if st.button(label, key=f"btn_{page}"):
-                st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Chat Interface
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        st.markdown('<div class="chat-title">🤖 Traffic Safety Assistant</div>', unsafe_allow_html=True)
-        
-        # Display chat history
-        for message in st.session_state.chat_history:
-            if message["role"] == "user":
-                st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="bot-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
-
-        # Chat input
-        user_input = st.chat_input("Ask about Qatar traffic data, safety measures, or policy recommendations...")
-        
-        if user_input:
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
-            
-            with st.spinner("Analyzing your query..."):
-                response = process_query_with_rag(user_input)
-                st.session_state.chat_history.append({"role": "assistant", "content": response})
-            
-            st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
 def main():
-    if st.session_state.page == 'home':
-        home_page()
+    # Header
+    st.markdown('<div class="header">', unsafe_allow_html=True)
+    st.markdown('<h1 class="logo">TraffiQ</h1>', unsafe_allow_html=True)
+    
+    # Navigation
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    nav_buttons = [
+        ("🚑 Accidents", "https://accidents.streamlit.app/"),
+        ("🚔 Violations", "https://violations.streamlit.app/"),
+        ("📇 License", "https://license.streamlit.app/"),
+        ("🚗 Vehicle", "https://vehicle.streamlit.app/")
+    ]
+    
+    for label, link in nav_buttons:
+        if st.button(label, key=f"nav_{link}", help=f"Navigate to {label}"):
+            st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Chat Interface
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    # Display chat history
+    for message in st.session_state.chat_history:
+        message_class = "user-message" if message["role"] == "user" else "bot-message"
+        icon = "👤" if message["role"] == "user" else "🤖"
+        st.markdown(
+            f'<div class="message {message_class}">{icon} {message["content"]}</div>',
+            unsafe_allow_html=True
+        )
+    
+    # Chat input
+    user_input = st.chat_input(
+        "Ask about Qatar traffic data, safety measures, or policy recommendations...",
+        key="chat_input"
+    )
+    
+    if user_input:
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        
+        with st.spinner("Processing your query..."):
+            response = process_query_with_rag(user_input)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+        
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
