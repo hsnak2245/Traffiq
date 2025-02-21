@@ -35,13 +35,7 @@ st.markdown("""
     text-align: center;
     margin: 2rem 0 3rem 0;
     font-size: 4.5rem;
-    font-weight: 700;
-    text-shadow: 
-        0 0 7px #4ecdc4,
-        0 0 10px #4ecdc4,
-        0 0 21px #4ecdc4,
-        0 0 42px rgba(78, 205, 196, 0.5);
-    animation: neon 1.5s ease-in-out infinite alternate;
+    font-weight: 700;;
 }
 
 @keyframes neon {
@@ -63,7 +57,7 @@ st.markdown("""
 
 /* Button grid styling */
 .button-container {
-    max-width: 600px;
+    max-width: 300px;
     margin: 0 auto;
     padding: 0 1rem;
 }
@@ -210,9 +204,9 @@ def process_query_with_rag(query):
         try:
             response = groq_client.chat.completions.create(
                 messages=messages,
-                model="llama-guard-3-8b",
+                model="mixtral-8x7b-32768",
                 temperature=0.7,
-                max_tokens=500,
+                max_tokens=6000,
                 top_p=0.9
             )
             return response.choices[0].message.content
