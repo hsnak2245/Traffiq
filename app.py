@@ -452,8 +452,8 @@ def main():
         },
         {
             "icon": "🚗",
-            "title": "Vehicle Registry (Under Progress)",
-            "description": "Centralized vehicle database with registration status, inspection records, and ownership history.",
+            "title": "Data to Campaign (Under Progress)",
+            "description": "Data to Outreach in a click. Enable authorities to generates campaign ready graphics and social media content using their brand assets directly from their data.",
             "url": ""
         }
     ]
