@@ -446,15 +446,15 @@ def main():
         },
         {
             "icon": "📇",
-            "title": "License Management",
+            "title": "License Analytics",
             "description": "Streamlined license processing system with verification tools and renewal tracking capabilities.",
             "url": "https://license.streamlit.app/"
         },
         {
             "icon": "🚗",
-            "title": "Vehicle Registry",
+            "title": "Vehicle Registry (Under Progress)",
             "description": "Centralized vehicle database with registration status, inspection records, and ownership history.",
-            "url": "https://vehicle.streamlit.app/"
+            "url": ""
         }
     ]
     
