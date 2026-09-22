@@ -9,13 +9,12 @@ from pathlib import Path
 
 # ============================================================
 # Map style — Carto Dark Matter GL style (string URL, no API key)
-# Works with pydeck 0.9.3 because map_style is a str, not dict.
 # ============================================================
 DARK_MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
 
 
 # ============================================================
-# Arabic → English translation maps for known enum fields
+# Arabic → English translation maps
 # ============================================================
 SEVERITY_MAP = {
     "اﺻﺎﺑﺎت ﺑﺳﻳطة": "Minor injury",
@@ -40,7 +39,6 @@ NATURE_MAP = {
 
 
 def _translate(series: pd.Series, mapping: dict) -> pd.Series:
-    """Translate Arabic enums to English; unknown values pass through unchanged."""
     stripped = series.astype(str).str.strip()
     translated = stripped.map(mapping)
     return translated.fillna(stripped)
@@ -57,15 +55,6 @@ class QatarAccidentsStreamlit:
         self.zones_data = None
         self.zone_names = self._load_zone_names()
         self.load_error = None
-
-        self.colors = {
-            "bg": "#0a0a0a",
-            "text": "#f0f0f0",
-            "pink": "#FF00FF",
-            "cyan": "#00FFFF",
-            "red": "#FF3333",
-        }
-
         self.load_data()
 
     # ------------------------------------------------------------
@@ -80,10 +69,10 @@ class QatarAccidentsStreamlit:
     def load_data(self) -> None:
         p = Path(self.accidents_file)
         if not p.is_file():
-            self.load_error = f"`{self.accidents_file}` not found in the app directory."
+            self.load_error = f"`{self.accidents_file}` not found."
             return
         if p.stat().st_size == 0:
-            self.load_error = f"`{self.accidents_file}` exists but is empty (0 bytes)."
+            self.load_error = f"`{self.accidents_file}` is empty (0 bytes)."
             return
 
         try:
@@ -96,10 +85,9 @@ class QatarAccidentsStreamlit:
             return
 
         if self.df.empty:
-            self.load_error = f"`{self.accidents_file}` loaded with 0 rows."
+            self.load_error = f"`{self.accidents_file}` has 0 rows."
             return
 
-        # --- ZONE (Arrow-safe) ---
         if "ZONE" in self.df.columns:
             zone_numeric = pd.to_numeric(
                 self.df["ZONE"].astype(str).str.strip(), errors="coerce"
@@ -110,7 +98,6 @@ class QatarAccidentsStreamlit:
                 "Unknown",
             )
 
-        # --- YEAR ---
         if "ACCIDENT_YEAR" in self.df.columns:
             self.df["ACCIDENT_YEAR"] = pd.to_numeric(
                 self.df["ACCIDENT_YEAR"], errors="coerce"
@@ -118,7 +105,6 @@ class QatarAccidentsStreamlit:
             self.df = self.df.dropna(subset=["ACCIDENT_YEAR"])
             self.df["ACCIDENT_YEAR"] = self.df["ACCIDENT_YEAR"].astype(int)
 
-        # --- HOUR ---
         if "ACCIDENT_TIME" in self.df.columns:
             self.df["HOUR"] = (
                 self.df["ACCIDENT_TIME"].astype(str)
@@ -126,19 +112,16 @@ class QatarAccidentsStreamlit:
                 .astype(float)
             )
 
-        # --- DEATH_COUNT ---
         if "DEATH_COUNT" in self.df.columns:
             self.df["DEATH_COUNT"] = pd.to_numeric(
                 self.df["DEATH_COUNT"], errors="coerce"
             ).fillna(0).astype(int)
 
-        # --- Translate Arabic enum fields ---
         if "ACCIDENT_SEVERITY" in self.df.columns:
             self.df["SEVERITY_EN"] = _translate(self.df["ACCIDENT_SEVERITY"], SEVERITY_MAP)
         if "ACCIDENT_NATURE" in self.df.columns:
             self.df["NATURE_EN"] = _translate(self.df["ACCIDENT_NATURE"], NATURE_MAP)
 
-        # --- Polygons ---
         if Path(self.polygons_file).is_file():
             try:
                 with open(self.polygons_file) as f:
@@ -147,16 +130,26 @@ class QatarAccidentsStreamlit:
                 st.warning(f"Could not load polygons: {e}")
 
     # ------------------------------------------------------------
+    # Color scale: cool cyan (low) → magenta (mid) → hot red (high)
+    # Zero-count zones stay nearly invisible
+    # ------------------------------------------------------------
     @staticmethod
-    def _interpolate_color(t: float, alpha: int = 190):
+    def _interpolate_color(t: float) -> list:
+        """t in [0,1]: 0 = cool cyan, 0.5 = magenta, 1 = hot red."""
         t = max(0.0, min(1.0, t))
         if t <= 0.5:
             u = t / 0.5
-            r, g, b = int(255 * (1 - u)), int(255 * u), 255
+            r = int(0 + u * 255)
+            g = int(220 * (1 - u))
+            b = int(255 - u * 0)
+            a = int(120 + u * 100)
         else:
             u = (t - 0.5) / 0.5
-            r, g, b = 255, int(255 * (1 - u)), int(255 * (1 - u))
-        return [r, g, b, alpha]
+            r = int(255)
+            g = int(0 + u * 60)
+            b = int(255 * (1 - u))
+            a = int(220 - u * 20)
+        return [r, g, b, a]
 
     # ------------------------------------------------------------
     def build_geojson(self, year: int) -> dict:
@@ -165,12 +158,21 @@ class QatarAccidentsStreamlit:
 
         year_data = self.df[self.df["ACCIDENT_YEAR"] == year]
         zone_counts = year_data["ZONE"].value_counts().to_dict()
-        max_count = max(zone_counts.values()) if zone_counts else 1
+
+        # Rank-based normalization for smoother distribution
+        counts = sorted(zone_counts.values(), reverse=True)
+        max_count = counts[0] if counts else 1
 
         features = []
         for zone_id, z in self.zones_data.items():
             count = int(zone_counts.get(zone_id, 0))
-            t = count / max_count if max_count else 0
+            if count == 0:
+                color = [40, 40, 40, 30]
+            else:
+                # Use log-ish scale so mid-range zones stay visible
+                t = (count / max_count) ** 0.7
+                color = self._interpolate_color(t)
+
             coords = [[p["lng"], p["lat"]] for p in z["coordinates"]]
             features.append({
                 "type": "Feature",
@@ -178,7 +180,7 @@ class QatarAccidentsStreamlit:
                     "zone_id": zone_id,
                     "name": self.zone_names.get(zone_id, f"Zone {zone_id}"),
                     "count": count,
-                    "color": self._interpolate_color(t),
+                    "color": color,
                 },
                 "geometry": {"type": "Polygon", "coordinates": [coords]},
             })
@@ -192,11 +194,12 @@ class QatarAccidentsStreamlit:
             "GeoJsonLayer",
             data=geojson,
             get_fill_color="properties.color",
-            get_line_color=[30, 30, 30, 200],
-            get_line_width=1,
+            get_line_color=[90, 90, 90, 180],
+            get_line_width=1.2,
             line_width_min_pixels=1,
             pickable=True,
             auto_highlight=True,
+            highlight_color=[0, 255, 255, 100],
             filled=True,
             stroked=True,
         )
@@ -204,7 +207,7 @@ class QatarAccidentsStreamlit:
         view_state = pdk.ViewState(
             latitude=25.2867,
             longitude=51.5333,
-            zoom=10.5,
+            zoom=10.6,
             pitch=0,
             bearing=0,
         )
@@ -216,11 +219,12 @@ class QatarAccidentsStreamlit:
             tooltip={
                 "html": "<b>{name}</b><br/>Accidents: <b>{count}</b>",
                 "style": {
-                    "backgroundColor": "#111",
+                    "backgroundColor": "#0f0f0f",
                     "color": "#00FFFF",
                     "fontFamily": "Space Grotesk, sans-serif",
                     "borderRadius": "8px",
                     "padding": "8px 12px",
+                    "border": "1px solid rgba(0,255,255,0.3)",
                 },
             },
         )
@@ -241,7 +245,6 @@ class QatarAccidentsStreamlit:
         total_deaths = int(self.df["DEATH_COUNT"].sum()) \
             if "DEATH_COUNT" in self.df.columns else 0
 
-        # Pedestrian detection — matches both Arabic and English forms
         if "ACCIDENT_NATURE" in self.df.columns and "DEATH_COUNT" in self.df.columns:
             nature = self.df["ACCIDENT_NATURE"].astype(str)
             mask = (
@@ -293,7 +296,6 @@ class QatarAccidentsStreamlit:
         .block-container { padding-top: 1rem; padding-bottom: 3rem; max-width: 1400px; }
 
         .hero-title {
-            font-family: 'Space Grotesk', sans-serif;
             font-size: 3.2rem; font-weight: 700;
             letter-spacing: -0.035em;
             background: linear-gradient(90deg, #00FFFF 0%, #FF00FF 60%, #FF3355 100%);
@@ -315,91 +317,147 @@ class QatarAccidentsStreamlit:
         }
         .home-button:hover { color: #00FFFF; border-color: rgba(0,255,255,0.4); }
 
+        /* ---- Metric cards ---- */
         .metric-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px; padding: 22px 24px; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.012) 100%);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 18px 22px;
+            height: 100%;
             transition: all .25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .metric-card:hover {
-            border-color: rgba(0,255,255,0.3);
+            border-color: rgba(0,255,255,0.28);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,255,255,0.08);
+            box-shadow: 0 8px 30px rgba(0,255,255,0.06);
         }
         .metric-label {
-            color: #8a8a8a; font-size: 0.78rem; font-weight: 500;
-            text-transform: uppercase; letter-spacing: 0.09em;
-            margin-bottom: 8px;
+            color: #8a8a8a; font-size: 0.72rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            margin-bottom: 10px;
         }
         .metric-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 2.2rem; font-weight: 600;
+            font-size: 2.05rem; font-weight: 600;
             color: #ffffff; line-height: 1;
         }
-        .metric-accent-cyan  { color: #00FFFF; }
-        .metric-accent-pink  { color: #FF66FF; }
-        .metric-accent-red   { color: #FF4466; }
+        .metric-accent-cyan { color: #00FFFF; }
+        .metric-accent-pink { color: #FF66FF; }
+        .metric-accent-red  { color: #FF4466; }
+        .metric-sub {
+            color: #5a5a5a; font-size: 0.68rem;
+            margin-top: 10px;
+            text-transform: uppercase; letter-spacing: 0.09em;
+        }
 
+        /* ---- Section title ---- */
         .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.35rem; font-weight: 600; color: #ffffff;
-            margin: 2.2rem 0 1rem 0; letter-spacing: -0.015em;
+            font-size: 1.3rem; font-weight: 600; color: #ffffff;
+            margin: 0; letter-spacing: -0.015em;
             display: flex; align-items: center; gap: 10px;
         }
         .section-title::before {
-            content: ''; width: 4px; height: 22px;
+            content: ''; width: 4px; height: 20px;
             background: linear-gradient(180deg, #00FFFF, #FF00FF);
             border-radius: 2px;
         }
 
+        /* ---- Year selector: make it compact & aligned ---- */
+        div[data-baseweb="select"] > div {
+            background-color: rgba(255,255,255,0.05) !important;
+            border-color: rgba(0,255,255,0.25) !important;
+            border-radius: 10px !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace !important;
+        }
+        div[data-baseweb="select"] > div:hover {
+            border-color: rgba(0,255,255,0.6) !important;
+        }
+
+        /* ---- Zone cards with rank badge ---- */
         .zone-card {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 16px; margin-bottom: 8px;
+            display: grid;
+            grid-template-columns: 26px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.05);
-            border-left: 3px solid #00FFFF;
-            border-radius: 10px; transition: all .2s ease;
+            border-radius: 10px;
+            transition: all .2s ease;
         }
         .zone-card:hover {
             background: rgba(0,255,255,0.06);
-            border-left-color: #FF00FF; transform: translateX(3px);
+            border-color: rgba(0,255,255,0.25);
+            transform: translateX(3px);
         }
-        .zone-name  { color: #e0e0e0; font-weight: 500; font-size: 0.9rem; }
+        .zone-rank {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6a6a6a;
+            text-align: center;
+        }
+        .zone-rank.top3 {
+            color: #FF00FF;
+        }
+        .zone-name {
+            color: #e0e0e0;
+            font-weight: 500;
+            font-size: 0.87rem;
+            line-height: 1.25;
+        }
         .zone-count {
             font-family: 'JetBrains Mono', monospace;
-            color: #00FFFF; font-weight: 600; font-size: 0.95rem;
+            color: #00FFFF;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        /* ---- Legend ---- */
+        .legend-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
         .legend-bar {
-            height: 10px; border-radius: 5px;
-            background: linear-gradient(90deg, #FF00FF 0%, #00FFFF 50%, #FF0000 100%);
-            margin: 6px 0 4px 0;
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #00dcdc 0%, #ff00ff 50%, #ff2222 100%);
         }
-        .legend-labels {
-            display: flex; justify-content: space-between;
-            color: #7a7a7a; font-size: 0.75rem;
+        .legend-label {
+            color: #7a7a7a;
+            font-size: 0.72rem;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
         }
-        div[data-baseweb="select"] > div {
-            background-color: rgba(255,255,255,0.04) !important;
-            border-color: rgba(255,255,255,0.1) !important;
-            border-radius: 10px !important;
-        }
-        div[data-baseweb="select"] > div:hover {
-            border-color: rgba(0,255,255,0.5) !important;
-        }
+
+        /* ---- Tabs ---- */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px; background: transparent;
+            gap: 6px; background: transparent;
             border-bottom: 1px solid rgba(255,255,255,0.06);
         }
         .stTabs [data-baseweb="tab"] {
             background: transparent; color: #8a8a8a;
             border-radius: 8px 8px 0 0; padding: 8px 18px;
-            font-weight: 500; font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
         }
         .stTabs [aria-selected="true"] {
             color: #00FFFF !important;
             border-bottom: 2px solid #00FFFF;
         }
-        iframe { border-radius: 16px; }
+
+        iframe { border-radius: 14px; }
+
+        /* Reduce vertical gap between stacked elements */
+        .element-container { margin-bottom: 0.6rem; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -424,65 +482,77 @@ class QatarAccidentsStreamlit:
             ("Pedestrian Deaths",     f'{m["pedestrian_deaths"]:,}',       "pink", "collisions"),
             ("Total Accidents",       self.format_number(m["total_accidents"]), "cyan", "recorded"),
         ]
-        cols = st.columns(4)
+        cols = st.columns(4, gap="small")
         for col, (label, value, accent, sub) in zip(cols, cards):
             with col:
                 st.markdown(f"""
                 <div class="metric-card">
                     <div class="metric-label">{label}</div>
                     <div class="metric-value metric-accent-{accent}">{value}</div>
-                    <div style="color:#5a5a5a;font-size:0.72rem;margin-top:8px;
-                                text-transform:uppercase;letter-spacing:0.08em;">
-                        {sub}
-                    </div>
+                    <div class="metric-sub">{sub}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
     def _render_zone_sidebar(self, year: int) -> None:
         year_data = self.df[self.df["ACCIDENT_YEAR"] == year]
         top = year_data["ZONE"].value_counts().head(8)
-        for zone, count in top.items():
+
+        for rank, (zone, count) in enumerate(top.items(), start=1):
             name = self.zone_names.get(str(zone), f"Zone {zone}")
+            rank_class = "zone-rank top3" if rank <= 3 else "zone-rank"
             st.markdown(f"""
             <div class="zone-card">
-                <span class="zone-name">{name}</span>
-                <span class="zone-count">{count:,}</span>
+                <div class="{rank_class}">#{rank}</div>
+                <div class="zone-name">{name}</div>
+                <div class="zone-count">{count:,}</div>
             </div>
             """, unsafe_allow_html=True)
 
     def _render_map_section(self) -> None:
         years = sorted(self.df["ACCIDENT_YEAR"].unique().tolist())
-        ctrl_l, ctrl_r = st.columns([3, 1])
-        with ctrl_l:
+
+        # ---- Title and year selector on the SAME row, baseline-aligned ----
+        title_col, spacer, year_col = st.columns([6, 2, 2], vertical_alignment="center")
+        with title_col:
             st.markdown('<div class="section-title">Geographic Distribution</div>',
                         unsafe_allow_html=True)
-        with ctrl_r:
+        with year_col:
             year = st.selectbox(
                 "Year", years, index=len(years) - 1,
                 label_visibility="collapsed", key="year_select",
             )
-        map_col, side_col = st.columns([2.2, 1])
+
+        st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
+
+        map_col, side_col = st.columns([2.2, 1], gap="medium")
+
         with map_col:
             deck = self.create_map(year)
             st.pydeck_chart(deck, use_container_width=True)
+
+            # Legend pinned beneath the map
             st.markdown("""
-            <div class="legend-bar"></div>
-            <div class="legend-labels">
-                <span>Low accidents</span>
-                <span>Medium</span>
-                <span>High</span>
+            <div class="legend-wrap">
+                <span class="legend-label">Low</span>
+                <div class="legend-bar"></div>
+                <span class="legend-label">High</span>
             </div>
             """, unsafe_allow_html=True)
+
         with side_col:
             st.markdown(f"""
-            <div class="section-title" style="font-size:1.05rem;margin-top:0;">
+            <div class="section-title" style="font-size:1.05rem;">
                 Top Zones · {year}
             </div>
+            <div style="height: 10px;"></div>
             """, unsafe_allow_html=True)
             self._render_zone_sidebar(year)
 
     def _render_insights(self) -> None:
+        st.markdown('<div style="height: 24px;"></div>', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Insights</div>', unsafe_allow_html=True)
+        st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
+
         tab1, tab2, tab3 = st.tabs(["📊 Severity", "👥 Age", "🕐 Hour"])
 
         chart_layout = dict(
@@ -583,21 +653,16 @@ class QatarAccidentsStreamlit:
             st.error("⚠️ Accident data could not be loaded.")
             if self.load_error:
                 st.markdown(f"**Reason:** {self.load_error}")
-            st.markdown("""
-            ### Check the following
-
-            - `facc.csv` is present in the repo root (same folder as `acc.py`)
-            - It is a real CSV file (not a Git-LFS pointer, not 0 bytes)
-            - The first line contains the column headers
-                `ACCIDENT_YEAR, ACCIDENT_TIME, WEATHER_STATUS, ...`
-            """)
             return
 
         self._render_metrics()
+        st.markdown('<div style="height: 28px;"></div>', unsafe_allow_html=True)
+
         if self.zones_data:
             self._render_map_section()
         else:
             st.warning("Zone polygons not loaded — map section skipped.")
+
         self._render_insights()
 
 
