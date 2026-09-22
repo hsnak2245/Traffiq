@@ -35,11 +35,10 @@ class QatarAccidentsStreamlit:
                  polygons_file: str = "qatar_zones_polygons.json"):
         self.accidents_file = accidents_file
         self.polygons_file = polygons_file
-        self.df: pd.DataFrame | None = None
-        self.zones_data: dict | None = None
-        self.zone_names: dict = self._load_zone_names()
+        self.df = None
+        self.zones_data = None
+        self.zone_names = self._load_zone_names()
 
-        # Neon palette
         self.colors = {
             "bg": "#0a0a0a",
             "panel": "rgba(255,255,255,0.03)",
@@ -117,8 +116,7 @@ class QatarAccidentsStreamlit:
     # Color interpolation: magenta -> cyan -> red
     # ------------------------------------------------------------
     @staticmethod
-    def _interpolate_color(t: float, alpha: int = 190) -> list[int]:
-        """t in [0, 1] -> [r, g, b, alpha]."""
+    def _interpolate_color(t: float, alpha: int = 190):
         t = max(0.0, min(1.0, t))
         if t <= 0.5:
             u = t / 0.5
@@ -129,7 +127,7 @@ class QatarAccidentsStreamlit:
         return [r, g, b, alpha]
 
     # ------------------------------------------------------------
-    # Build GeoJSON for a given year (with per-feature color)
+    # Build GeoJSON for a given year
     # ------------------------------------------------------------
     def build_geojson(self, year: int) -> dict:
         if self.df is None or self.zones_data is None:
@@ -157,7 +155,7 @@ class QatarAccidentsStreamlit:
         return {"type": "FeatureCollection", "features": features}
 
     # ------------------------------------------------------------
-    # PyDeck map
+    # PyDeck map (fixed: map_provider="maplibre" for dict styles)
     # ------------------------------------------------------------
     def create_map(self, year: int) -> pdk.Deck:
         geojson = self.build_geojson(year)
@@ -187,12 +185,13 @@ class QatarAccidentsStreamlit:
             layers=[layer],
             initial_view_state=view_state,
             map_style=ESRI_DARK_STYLE,
+            map_provider="maplibre",
             tooltip={
                 "html": "<b>{name}</b><br/>Accidents: <b>{count}</b>",
                 "style": {
                     "backgroundColor": "#111",
                     "color": "#00FFFF",
-                    "fontFamily": "Inter, sans-serif",
+                    "fontFamily": "'Space Grotesk', sans-serif",
                     "borderRadius": "8px",
                     "padding": "8px 12px",
                 },
@@ -241,9 +240,12 @@ class QatarAccidentsStreamlit:
     def _inject_css(self) -> None:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
-        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+        html, body, [class*="css"], .stApp, .stMarkdown, .stMetric,
+        button, input, select, textarea {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        }
 
         .stApp {
             background:
@@ -255,18 +257,24 @@ class QatarAccidentsStreamlit:
 
         #MainMenu, footer, header { visibility: hidden; }
 
-        .block-container { padding-top: 1rem; padding-bottom: 3rem; max-width: 1400px; }
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 3rem;
+            max-width: 1400px;
+        }
 
         /* Hero */
         .hero-title {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 3.2rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
+            font-weight: 700;
+            letter-spacing: -0.035em;
             background: linear-gradient(90deg, #00FFFF 0%, #FF00FF 60%, #FF3355 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
-            line-height: 1.1;
+            line-height: 1.05;
         }
         .hero-sub {
             color: #8a8a8a;
@@ -274,6 +282,7 @@ class QatarAccidentsStreamlit:
             margin-top: 0.4rem;
             margin-bottom: 2rem;
             font-weight: 400;
+            letter-spacing: -0.005em;
         }
 
         /* Home button */
@@ -290,7 +299,10 @@ class QatarAccidentsStreamlit:
             transition: all .2s ease;
             margin-bottom: 1rem;
         }
-        .home-button:hover { color: #00FFFF; border-color: rgba(0,255,255,0.4); }
+        .home-button:hover {
+            color: #00FFFF;
+            border-color: rgba(0,255,255,0.4);
+        }
 
         /* Metric card */
         .metric-card {
@@ -310,16 +322,16 @@ class QatarAccidentsStreamlit:
         }
         .metric-label {
             color: #8a8a8a;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.09em;
             margin-bottom: 8px;
         }
         .metric-value {
             font-family: 'JetBrains Mono', monospace;
             font-size: 2.2rem;
-            font-weight: 700;
+            font-weight: 600;
             color: #ffffff;
             line-height: 1;
         }
@@ -329,11 +341,12 @@ class QatarAccidentsStreamlit:
 
         /* Section title */
         .section-title {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 1.35rem;
-            font-weight: 700;
+            font-weight: 600;
             color: #ffffff;
             margin: 2.2rem 0 1rem 0;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.015em;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -364,7 +377,7 @@ class QatarAccidentsStreamlit:
             border-left-color: #FF00FF;
             transform: translateX(3px);
         }
-        .zone-name  { color: #e0e0e0; font-weight: 500; font-size: 0.92rem; }
+        .zone-name  { color: #e0e0e0; font-weight: 500; font-size: 0.9rem; }
         .zone-count {
             font-family: 'JetBrains Mono', monospace;
             color: #00FFFF;
@@ -384,6 +397,7 @@ class QatarAccidentsStreamlit:
             justify-content: space-between;
             color: #7a7a7a;
             font-size: 0.75rem;
+            letter-spacing: 0.02em;
         }
 
         /* Selectbox tweak */
@@ -408,6 +422,7 @@ class QatarAccidentsStreamlit:
             border-radius: 8px 8px 0 0;
             padding: 8px 18px;
             font-weight: 500;
+            font-family: 'Space Grotesk', sans-serif;
         }
         .stTabs [aria-selected="true"] {
             color: #00FFFF !important;
@@ -450,8 +465,8 @@ class QatarAccidentsStreamlit:
                 <div class="metric-card">
                     <div class="metric-label">{label}</div>
                     <div class="metric-value metric-accent-{accent}">{value}</div>
-                    <div style="color:#5a5a5a;font-size:0.75rem;margin-top:8px;
-                                text-transform:uppercase;letter-spacing:0.06em;">
+                    <div style="color:#5a5a5a;font-size:0.72rem;margin-top:8px;
+                                text-transform:uppercase;letter-spacing:0.08em;">
                         {sub}
                     </div>
                 </div>
@@ -483,15 +498,15 @@ class QatarAccidentsStreamlit:
                 years,
                 index=len(years) - 1,
                 label_visibility="collapsed",
+                key="year_select",
             )
 
         map_col, side_col = st.columns([2.2, 1])
 
         with map_col:
             deck = self.create_map(year)
-            st.pydeck_chart(deck, use_container_width=True, height=560)
+            st.pydeck_chart(deck, use_container_width=True)
 
-            # Legend
             st.markdown("""
             <div class="legend-bar"></div>
             <div class="legend-labels">
@@ -517,6 +532,7 @@ class QatarAccidentsStreamlit:
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
             font_color="#e0e0e0",
+            font_family="Space Grotesk, sans-serif",
             margin=dict(l=10, r=10, t=40, b=10),
         )
 
@@ -529,10 +545,14 @@ class QatarAccidentsStreamlit:
                 key="cat_select",
             )
             if category in self.df.columns:
-                counts = (self.df.groupby([category, "ACCIDENT_SEVERITY"])
-                                .size().unstack(fill_value=0))
+                counts = (
+                    self.df.groupby([category, "ACCIDENT_SEVERITY"])
+                    .size()
+                    .unstack(fill_value=0)
+                )
                 fig = px.bar(
-                    counts, barmode="stack",
+                    counts,
+                    barmode="stack",
                     title=f"Severity by {category.replace('_', ' ').title()}",
                     color_discrete_sequence=px.colors.sequential.Plasma,
                 )
@@ -551,24 +571,37 @@ class QatarAccidentsStreamlit:
                 d = d[(d["AGE"] >= 0) & (d["AGE"] <= 90)]
                 age_counts = d.groupby("AGE").size().reset_index(name="count")
                 mean_age = d["AGE"].mean()
+
                 fig = px.scatter(
-                    age_counts, x="AGE", y="count", size="count",
+                    age_counts,
+                    x="AGE",
+                    y="count",
+                    size="count",
                     title="Accidents by Driver Age",
                     color_discrete_sequence=["#FF00FF"],
                 )
                 fig.add_annotation(
                     x=0.98, y=1.06, xref="paper", yref="paper",
                     text=f"Mean age: {mean_age:.1f}",
-                    showarrow=False, font=dict(color="#00FFFF", size=12),
+                    showarrow=False,
+                    font=dict(color="#00FFFF", size=12),
                 )
                 fig.update_layout(**chart_layout)
                 st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Birth year column not available in dataset.")
 
         with tab3:
-            hour_counts = (self.df.dropna(subset=["HOUR"])
-                               .groupby("HOUR").size().reset_index(name="count"))
+            hour_counts = (
+                self.df.dropna(subset=["HOUR"])
+                .groupby("HOUR")
+                .size()
+                .reset_index(name="count")
+            )
             fig = px.bar(
-                hour_counts, x="HOUR", y="count",
+                hour_counts,
+                x="HOUR",
+                y="count",
                 title="Accidents by Hour of Day",
                 color_discrete_sequence=["#00FFFF"],
             )
