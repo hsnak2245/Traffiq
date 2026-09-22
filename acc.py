@@ -615,7 +615,6 @@ class QatarAccidentsStreamlit:
         }}
         .source-footer a:hover {{ border-bottom-color: var(--accent1); }}
 
-        /* Plotly chart container – keep transparent */
         .stPlotlyChart {{ background: transparent !important; }}
         .stPlotlyChart > div {{ background: transparent !important; }}
 
@@ -697,7 +696,7 @@ class QatarAccidentsStreamlit:
 
         with map_col:
             deck = self.create_map(year, theme)
-            st.pydeck_chart(deck, use_container_width=True)
+            st.pydeck_chart(deck, width="stretch")
             st.markdown("""
             <div class="legend-wrap">
                 <span class="legend-label">Low</span>
@@ -783,6 +782,7 @@ class QatarAccidentsStreamlit:
             "collisions forming a small but high-fatality slice.",
         )
 
+        # Top 5 natures
         top_natures = (
             self.df[nature_col]
             .value_counts()
@@ -792,12 +792,9 @@ class QatarAccidentsStreamlit:
         )
         d = self.df[self.df[nature_col].isin(top_natures)].copy()
 
-        counts = (
-            d.groupby([nature_col, severity_col])
-            .size()
-            .unstack(fill_value=0)
-            .loc[top_natures]
-        )
+        # Build the cross-tab safely — crosstab then reindex (no .loc KeyError)
+        counts = pd.crosstab(d[nature_col], d[severity_col])
+        counts = counts.reindex(top_natures, fill_value=0)
 
         fig = px.bar(
             counts,
@@ -805,12 +802,13 @@ class QatarAccidentsStreamlit:
             color_discrete_sequence=theme["chart_palette"],
         )
         fig.update_layout(barmode="stack")
-        fig.update_yaxes(title_text="Accidents", tickfont=dict(color=theme["text_muted"]))
+        fig.update_yaxes(title_text="Accidents",
+                         tickfont=dict(color=theme["text_muted"]))
         fig.update_xaxes(title_text="", tickangle=0)
 
         self._apply_plotly_theme(fig, theme, showlegend=True)
         fig.update_layout(height=420, bargap=0.35)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     def _story_age(self, theme: dict) -> None:
         birth_col = next(
@@ -850,7 +848,7 @@ class QatarAccidentsStreamlit:
 
         self._apply_plotly_theme(fig, theme, showlegend=False)
         fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     def _story_hour(self, theme: dict) -> None:
         if "HOUR" not in self.df.columns:
@@ -887,7 +885,7 @@ class QatarAccidentsStreamlit:
 
         self._apply_plotly_theme(fig, theme, showlegend=False)
         fig.update_layout(height=400, bargap=0.15)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     def _render_story(self, theme: dict) -> None:
         st.markdown('<hr class="dj-divider"/>', unsafe_allow_html=True)
