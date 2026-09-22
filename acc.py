@@ -4,28 +4,46 @@ import numpy as np
 import json
 import pydeck as pdk
 import plotly.express as px
-import plotly.graph_objects as go
 from pathlib import Path
 
 
 # ============================================================
-# Map style: Esri Dark Gray Canvas (free, no API key)
+# Map style — Carto Dark Matter GL style (string URL, no API key)
+# Works with pydeck 0.9.3 because map_style is a str, not dict.
 # ============================================================
-ESRI_DARK_STYLE = {
-    "version": 8,
-    "sources": {
-        "esri-dark": {
-            "type": "raster",
-            "tiles": [
-                "https://server.arcgisonline.com/ArcGIS/rest/services/"
-                "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            ],
-            "tileSize": 256,
-            "attribution": "Esri, HERE, Garmin, © OpenStreetMap contributors",
-        }
-    },
-    "layers": [{"id": "esri-dark", "type": "raster", "source": "esri-dark"}],
+DARK_MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+
+
+# ============================================================
+# Arabic → English translation maps for known enum fields
+# ============================================================
+SEVERITY_MAP = {
+    "اﺻﺎﺑﺎت ﺑﺳﻳطة": "Minor injury",
+    "ﺣﺎدث ﺑﺳﻳط": "Minor accident",
+    "اﺻﺎﺑﺎت ﻣﺗوﺳطﺔ": "Moderate injury",
+    "اﺻﺎﺑﺎت ﺑﻟﻳﻐﺔ": "Severe injury",
+    "إﺻﺎﺑﺔ ﺑﺎﻟﻐﺔ": "Severe injury",
+    "وﻓﺎة": "Death",
+    "وﻓﻳﺎت": "Death",
 }
+
+NATURE_MAP = {
+    "ﺗﺻﺎدم ﻣﻊ ﻣﺷﺎة": "Collision with pedestrian",
+    "ﺗﺻﺎدم ﻣرﻛﺑﺗﻳن": "Collision (2 vehicles)",
+    "ﺗﺻﺎدم اﻛﺛر ﻣن ﻣرﻛﺑﺗﻳن": "Collision (3+ vehicles)",
+    "ﻟﻳس ﺑﺣﺎدث ﺗﺻﺎدم": "Non-collision incident",
+    "اﺻطدام": "Collision",
+    "اﻧﻗﻼب": "Rollover",
+    "دﻫس": "Run-over",
+    "ﺳﻘوط ﻣن ﻣرﻛﺑﺔ": "Fall from vehicle",
+}
+
+
+def _translate(series: pd.Series, mapping: dict) -> pd.Series:
+    """Translate Arabic enums to English; unknown values pass through unchanged."""
+    stripped = series.astype(str).str.strip()
+    translated = stripped.map(mapping)
+    return translated.fillna(stripped)
 
 
 class QatarAccidentsStreamlit:
@@ -38,12 +56,11 @@ class QatarAccidentsStreamlit:
         self.df = None
         self.zones_data = None
         self.zone_names = self._load_zone_names()
+        self.load_error = None
 
         self.colors = {
             "bg": "#0a0a0a",
-            "panel": "rgba(255,255,255,0.03)",
             "text": "#f0f0f0",
-            "muted": "#7a7a7a",
             "pink": "#FF00FF",
             "cyan": "#00FFFF",
             "red": "#FF3333",
@@ -52,68 +69,83 @@ class QatarAccidentsStreamlit:
         self.load_data()
 
     # ------------------------------------------------------------
-    # Zone names
-    # ------------------------------------------------------------
     def _load_zone_names(self) -> dict:
         try:
             with open("zone_names.json") as f:
                 return json.load(f)
-        except Exception as e:
-            st.warning(f"Could not load zone names: {e}")
+        except Exception:
             return {}
 
     # ------------------------------------------------------------
-    # Data loading + cleaning (Arrow-safe)
-    # ------------------------------------------------------------
     def load_data(self) -> None:
-        if not Path(self.accidents_file).is_file():
-            st.error(f"Accidents file '{self.accidents_file}' not found.")
+        p = Path(self.accidents_file)
+        if not p.is_file():
+            self.load_error = f"`{self.accidents_file}` not found in the app directory."
+            return
+        if p.stat().st_size == 0:
+            self.load_error = f"`{self.accidents_file}` exists but is empty (0 bytes)."
             return
 
-        self.df = pd.read_csv(self.accidents_file, skipinitialspace=True)
-
-        # --- Clean ZONE (vectorized, Arrow-safe) ---
-        zone_numeric = pd.to_numeric(
-            self.df["ZONE"].astype(str).str.strip(), errors="coerce"
-        )
-        self.df["ZONE"] = np.where(
-            zone_numeric.notna(),
-            zone_numeric.fillna(0).astype(int).astype(str),
-            "Unknown",
-        )
-
-        # --- Clean YEAR (fixes 2024.0 display) ---
-        self.df["ACCIDENT_YEAR"] = pd.to_numeric(
-            self.df["ACCIDENT_YEAR"], errors="coerce"
-        )
-        self.df = self.df.dropna(subset=["ACCIDENT_YEAR"])
-        self.df["ACCIDENT_YEAR"] = self.df["ACCIDENT_YEAR"].astype(int)
-
-        # --- Extract hour ---
-        self.df["HOUR"] = (
-            self.df["ACCIDENT_TIME"]
-            .astype(str)
-            .str.extract(r"(\d+)", expand=False)
-            .astype(float)
-        )
-
-        # --- Numeric death count ---
-        self.df["DEATH_COUNT"] = pd.to_numeric(
-            self.df["DEATH_COUNT"], errors="coerce"
-        ).fillna(0).astype(int)
-
-        # --- Load polygons ---
-        if not Path(self.polygons_file).is_file():
-            st.warning(f"Polygon file '{self.polygons_file}' not found.")
-            return
         try:
-            with open(self.polygons_file) as f:
-                self.zones_data = json.load(f)
+            self.df = pd.read_csv(self.accidents_file, skipinitialspace=True)
+        except pd.errors.EmptyDataError:
+            self.load_error = f"`{self.accidents_file}` has no parseable columns."
+            return
         except Exception as e:
-            st.warning(f"Could not load polygons: {e}")
+            self.load_error = f"Failed to read `{self.accidents_file}`: {e}"
+            return
 
-    # ------------------------------------------------------------
-    # Color interpolation: magenta -> cyan -> red
+        if self.df.empty:
+            self.load_error = f"`{self.accidents_file}` loaded with 0 rows."
+            return
+
+        # --- ZONE (Arrow-safe) ---
+        if "ZONE" in self.df.columns:
+            zone_numeric = pd.to_numeric(
+                self.df["ZONE"].astype(str).str.strip(), errors="coerce"
+            )
+            self.df["ZONE"] = np.where(
+                zone_numeric.notna(),
+                zone_numeric.fillna(0).astype(int).astype(str),
+                "Unknown",
+            )
+
+        # --- YEAR ---
+        if "ACCIDENT_YEAR" in self.df.columns:
+            self.df["ACCIDENT_YEAR"] = pd.to_numeric(
+                self.df["ACCIDENT_YEAR"], errors="coerce"
+            )
+            self.df = self.df.dropna(subset=["ACCIDENT_YEAR"])
+            self.df["ACCIDENT_YEAR"] = self.df["ACCIDENT_YEAR"].astype(int)
+
+        # --- HOUR ---
+        if "ACCIDENT_TIME" in self.df.columns:
+            self.df["HOUR"] = (
+                self.df["ACCIDENT_TIME"].astype(str)
+                .str.extract(r"(\d+)", expand=False)
+                .astype(float)
+            )
+
+        # --- DEATH_COUNT ---
+        if "DEATH_COUNT" in self.df.columns:
+            self.df["DEATH_COUNT"] = pd.to_numeric(
+                self.df["DEATH_COUNT"], errors="coerce"
+            ).fillna(0).astype(int)
+
+        # --- Translate Arabic enum fields ---
+        if "ACCIDENT_SEVERITY" in self.df.columns:
+            self.df["SEVERITY_EN"] = _translate(self.df["ACCIDENT_SEVERITY"], SEVERITY_MAP)
+        if "ACCIDENT_NATURE" in self.df.columns:
+            self.df["NATURE_EN"] = _translate(self.df["ACCIDENT_NATURE"], NATURE_MAP)
+
+        # --- Polygons ---
+        if Path(self.polygons_file).is_file():
+            try:
+                with open(self.polygons_file) as f:
+                    self.zones_data = json.load(f)
+            except Exception as e:
+                st.warning(f"Could not load polygons: {e}")
+
     # ------------------------------------------------------------
     @staticmethod
     def _interpolate_color(t: float, alpha: int = 190):
@@ -126,8 +158,6 @@ class QatarAccidentsStreamlit:
             r, g, b = 255, int(255 * (1 - u)), int(255 * (1 - u))
         return [r, g, b, alpha]
 
-    # ------------------------------------------------------------
-    # Build GeoJSON for a given year
     # ------------------------------------------------------------
     def build_geojson(self, year: int) -> dict:
         if self.df is None or self.zones_data is None:
@@ -154,8 +184,6 @@ class QatarAccidentsStreamlit:
             })
         return {"type": "FeatureCollection", "features": features}
 
-    # ------------------------------------------------------------
-    # PyDeck map (fixed: map_provider="maplibre" for dict styles)
     # ------------------------------------------------------------
     def create_map(self, year: int) -> pdk.Deck:
         geojson = self.build_geojson(year)
@@ -184,14 +212,13 @@ class QatarAccidentsStreamlit:
         return pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            map_style=ESRI_DARK_STYLE,
-            map_provider="maplibre",
+            map_style=DARK_MAP_STYLE,
             tooltip={
                 "html": "<b>{name}</b><br/>Accidents: <b>{count}</b>",
                 "style": {
                     "backgroundColor": "#111",
                     "color": "#00FFFF",
-                    "fontFamily": "'Space Grotesk', sans-serif",
+                    "fontFamily": "Space Grotesk, sans-serif",
                     "borderRadius": "8px",
                     "padding": "8px 12px",
                 },
@@ -199,25 +226,32 @@ class QatarAccidentsStreamlit:
         )
 
     # ------------------------------------------------------------
-    # Metrics
-    # ------------------------------------------------------------
     def calculate_metrics(self) -> dict:
         if self.df is None or self.df.empty:
             return {"annual_avg": 0, "total_deaths": 0,
                     "pedestrian_deaths": 0, "total_accidents": 0}
 
-        recent = self.df[self.df["ACCIDENT_YEAR"] >= 2020]
-        n_years = recent["ACCIDENT_YEAR"].nunique()
-        annual_avg = len(recent) / n_years if n_years else 0
+        if "ACCIDENT_YEAR" in self.df.columns:
+            recent = self.df[self.df["ACCIDENT_YEAR"] >= 2020]
+            n_years = recent["ACCIDENT_YEAR"].nunique()
+            annual_avg = len(recent) / n_years if n_years else 0
+        else:
+            annual_avg = 0
 
-        total_deaths = int(self.df["DEATH_COUNT"].sum())
+        total_deaths = int(self.df["DEATH_COUNT"].sum()) \
+            if "DEATH_COUNT" in self.df.columns else 0
 
-        ped_deaths = int(
-            self.df[
-                self.df["ACCIDENT_NATURE"].astype(str).str.upper()
-                == "COLLISION WITH PEDESTRIANS"
-            ]["DEATH_COUNT"].sum()
-        )
+        # Pedestrian detection — matches both Arabic and English forms
+        if "ACCIDENT_NATURE" in self.df.columns and "DEATH_COUNT" in self.df.columns:
+            nature = self.df["ACCIDENT_NATURE"].astype(str)
+            mask = (
+                nature.str.contains("PEDESTRIAN", case=False, na=False)
+                | nature.str.contains("ﻣﺷﺎة", na=False)
+                | nature.str.contains("ﻣﺷﺎه", na=False)
+            )
+            ped_deaths = int(self.df.loc[mask, "DEATH_COUNT"].sum())
+        else:
+            ped_deaths = 0
 
         return {
             "annual_avg": round(annual_avg, 1),
@@ -235,7 +269,7 @@ class QatarAccidentsStreamlit:
         return f"{num:,.0f}"
 
     # ============================================================
-    # UI SECTIONS
+    # UI
     # ============================================================
     def _inject_css(self) -> None:
         st.markdown("""
@@ -256,63 +290,35 @@ class QatarAccidentsStreamlit:
         }
 
         #MainMenu, footer, header { visibility: hidden; }
+        .block-container { padding-top: 1rem; padding-bottom: 3rem; max-width: 1400px; }
 
-        .block-container {
-            padding-top: 1rem;
-            padding-bottom: 3rem;
-            max-width: 1400px;
-        }
-
-        /* Hero */
         .hero-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 3.2rem;
-            font-weight: 700;
+            font-size: 3.2rem; font-weight: 700;
             letter-spacing: -0.035em;
             background: linear-gradient(90deg, #00FFFF 0%, #FF00FF 60%, #FF3355 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin: 0;
-            line-height: 1.05;
+            margin: 0; line-height: 1.05;
         }
         .hero-sub {
-            color: #8a8a8a;
-            font-size: 1.05rem;
-            margin-top: 0.4rem;
-            margin-bottom: 2rem;
-            font-weight: 400;
-            letter-spacing: -0.005em;
+            color: #8a8a8a; font-size: 1.05rem;
+            margin-top: 0.4rem; margin-bottom: 2rem; font-weight: 400;
         }
-
-        /* Home button */
         .home-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #b0b0b0;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 6px 12px;
-            border-radius: 8px;
+            display: inline-flex; align-items: center; gap: 6px;
+            color: #b0b0b0; text-decoration: none; font-weight: 500;
+            padding: 6px 12px; border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.08);
-            transition: all .2s ease;
-            margin-bottom: 1rem;
+            transition: all .2s ease; margin-bottom: 1rem;
         }
-        .home-button:hover {
-            color: #00FFFF;
-            border-color: rgba(0,255,255,0.4);
-        }
+        .home-button:hover { color: #00FFFF; border-color: rgba(0,255,255,0.4); }
 
-        /* Metric card */
         .metric-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
             border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px;
-            padding: 22px 24px;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
+            border-radius: 16px; padding: 22px 24px; height: 100%;
             transition: all .25s ease;
         }
         .metric-card:hover {
@@ -321,86 +327,57 @@ class QatarAccidentsStreamlit:
             box-shadow: 0 8px 30px rgba(0,255,255,0.08);
         }
         .metric-label {
-            color: #8a8a8a;
-            font-size: 0.78rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.09em;
+            color: #8a8a8a; font-size: 0.78rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.09em;
             margin-bottom: 8px;
         }
         .metric-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 2.2rem;
-            font-weight: 600;
-            color: #ffffff;
-            line-height: 1;
+            font-size: 2.2rem; font-weight: 600;
+            color: #ffffff; line-height: 1;
         }
         .metric-accent-cyan  { color: #00FFFF; }
         .metric-accent-pink  { color: #FF66FF; }
         .metric-accent-red   { color: #FF4466; }
 
-        /* Section title */
         .section-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.35rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin: 2.2rem 0 1rem 0;
-            letter-spacing: -0.015em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 1.35rem; font-weight: 600; color: #ffffff;
+            margin: 2.2rem 0 1rem 0; letter-spacing: -0.015em;
+            display: flex; align-items: center; gap: 10px;
         }
         .section-title::before {
-            content: '';
-            width: 4px;
-            height: 22px;
+            content: ''; width: 4px; height: 22px;
             background: linear-gradient(180deg, #00FFFF, #FF00FF);
             border-radius: 2px;
         }
 
-        /* Zone card */
         .zone-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; margin-bottom: 8px;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.05);
             border-left: 3px solid #00FFFF;
-            border-radius: 10px;
-            transition: all .2s ease;
+            border-radius: 10px; transition: all .2s ease;
         }
         .zone-card:hover {
             background: rgba(0,255,255,0.06);
-            border-left-color: #FF00FF;
-            transform: translateX(3px);
+            border-left-color: #FF00FF; transform: translateX(3px);
         }
         .zone-name  { color: #e0e0e0; font-weight: 500; font-size: 0.9rem; }
         .zone-count {
             font-family: 'JetBrains Mono', monospace;
-            color: #00FFFF;
-            font-weight: 600;
-            font-size: 0.95rem;
+            color: #00FFFF; font-weight: 600; font-size: 0.95rem;
         }
-
-        /* Legend */
         .legend-bar {
-            height: 10px;
-            border-radius: 5px;
+            height: 10px; border-radius: 5px;
             background: linear-gradient(90deg, #FF00FF 0%, #00FFFF 50%, #FF0000 100%);
             margin: 6px 0 4px 0;
         }
         .legend-labels {
-            display: flex;
-            justify-content: space-between;
-            color: #7a7a7a;
-            font-size: 0.75rem;
-            letter-spacing: 0.02em;
+            display: flex; justify-content: space-between;
+            color: #7a7a7a; font-size: 0.75rem;
         }
-
-        /* Selectbox tweak */
         div[data-baseweb="select"] > div {
             background-color: rgba(255,255,255,0.04) !important;
             border-color: rgba(255,255,255,0.1) !important;
@@ -409,27 +386,19 @@ class QatarAccidentsStreamlit:
         div[data-baseweb="select"] > div:hover {
             border-color: rgba(0,255,255,0.5) !important;
         }
-
-        /* Tabs */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-            background: transparent;
+            gap: 8px; background: transparent;
             border-bottom: 1px solid rgba(255,255,255,0.06);
         }
         .stTabs [data-baseweb="tab"] {
-            background: transparent;
-            color: #8a8a8a;
-            border-radius: 8px 8px 0 0;
-            padding: 8px 18px;
-            font-weight: 500;
-            font-family: 'Space Grotesk', sans-serif;
+            background: transparent; color: #8a8a8a;
+            border-radius: 8px 8px 0 0; padding: 8px 18px;
+            font-weight: 500; font-family: 'Space Grotesk', sans-serif;
         }
         .stTabs [aria-selected="true"] {
             color: #00FFFF !important;
             border-bottom: 2px solid #00FFFF;
         }
-
-        /* PyDeck iframe rounding */
         iframe { border-radius: 16px; }
         </style>
         """, unsafe_allow_html=True)
@@ -440,7 +409,6 @@ class QatarAccidentsStreamlit:
             <span>🏠</span><span>Home</span>
         </a>
         """, unsafe_allow_html=True)
-
         st.markdown('<h1 class="hero-title">TraffiiQ</h1>', unsafe_allow_html=True)
         st.markdown(
             '<p class="hero-sub">Spatial intelligence on Qatar\'s road accidents — '
@@ -450,14 +418,12 @@ class QatarAccidentsStreamlit:
 
     def _render_metrics(self) -> None:
         m = self.calculate_metrics()
-
         cards = [
             ("Annual Avg. Accidents", self.format_number(m["annual_avg"]), "cyan", "2020+"),
             ("Total Deaths",          f'{m["total_deaths"]:,}',            "red",  "all years"),
             ("Pedestrian Deaths",     f'{m["pedestrian_deaths"]:,}',       "pink", "collisions"),
             ("Total Accidents",       self.format_number(m["total_accidents"]), "cyan", "recorded"),
         ]
-
         cols = st.columns(4)
         for col, (label, value, accent, sub) in zip(cols, cards):
             with col:
@@ -475,7 +441,6 @@ class QatarAccidentsStreamlit:
     def _render_zone_sidebar(self, year: int) -> None:
         year_data = self.df[self.df["ACCIDENT_YEAR"] == year]
         top = year_data["ZONE"].value_counts().head(8)
-
         for zone, count in top.items():
             name = self.zone_names.get(str(zone), f"Zone {zone}")
             st.markdown(f"""
@@ -487,26 +452,19 @@ class QatarAccidentsStreamlit:
 
     def _render_map_section(self) -> None:
         years = sorted(self.df["ACCIDENT_YEAR"].unique().tolist())
-
         ctrl_l, ctrl_r = st.columns([3, 1])
         with ctrl_l:
             st.markdown('<div class="section-title">Geographic Distribution</div>',
                         unsafe_allow_html=True)
         with ctrl_r:
             year = st.selectbox(
-                "Year",
-                years,
-                index=len(years) - 1,
-                label_visibility="collapsed",
-                key="year_select",
+                "Year", years, index=len(years) - 1,
+                label_visibility="collapsed", key="year_select",
             )
-
         map_col, side_col = st.columns([2.2, 1])
-
         with map_col:
             deck = self.create_map(year)
             st.pydeck_chart(deck, use_container_width=True)
-
             st.markdown("""
             <div class="legend-bar"></div>
             <div class="legend-labels">
@@ -515,7 +473,6 @@ class QatarAccidentsStreamlit:
                 <span>High</span>
             </div>
             """, unsafe_allow_html=True)
-
         with side_col:
             st.markdown(f"""
             <div class="section-title" style="font-size:1.05rem;margin-top:0;">
@@ -537,95 +494,110 @@ class QatarAccidentsStreamlit:
         )
 
         with tab1:
-            category = st.selectbox(
-                "Break down by:",
-                ["NATIONALITY_GROUP_OF_ACCIDENT", "ACCIDENT_NATURE",
-                 "ACCIDENT_REASON", "ACCIDENT_SEVERITY"],
-                format_func=lambda x: x.replace("_", " ").title(),
-                key="cat_select",
-            )
-            if category in self.df.columns:
-                counts = (
-                    self.df.groupby([category, "ACCIDENT_SEVERITY"])
-                    .size()
-                    .unstack(fill_value=0)
-                )
-                fig = px.bar(
-                    counts,
-                    barmode="stack",
-                    title=f"Severity by {category.replace('_', ' ').title()}",
-                    color_discrete_sequence=px.colors.sequential.Plasma,
-                )
-                fig.update_layout(**chart_layout)
-                st.plotly_chart(fig, use_container_width=True)
+            candidates = [
+                "NATIONALITY_GROUP_OF_ACCIDENT",
+                "NATURE_EN",
+                "ACCIDENT_NATURE",
+                "ACCIDENT_REASON",
+            ]
+            available = [c for c in candidates if c in self.df.columns]
+            severity_col = "SEVERITY_EN" if "SEVERITY_EN" in self.df.columns else "ACCIDENT_SEVERITY"
+
+            if not available:
+                st.info("No breakdown columns available in dataset.")
             else:
-                st.info(f"Column '{category}' not found in dataset.")
+                category = st.selectbox(
+                    "Break down by:", available,
+                    format_func=lambda x: x.replace("_", " ").strip().title(),
+                    key="cat_select",
+                )
+                if severity_col in self.df.columns:
+                    counts = (
+                        self.df.groupby([category, severity_col])
+                        .size().unstack(fill_value=0)
+                    )
+                    fig = px.bar(
+                        counts, barmode="stack",
+                        title=f"Severity by {category.replace('_', ' ').title()}",
+                        color_discrete_sequence=px.colors.sequential.Plasma,
+                    )
+                    fig.update_layout(**chart_layout)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("Severity column missing.")
 
         with tab2:
-            birth_col = "BIRTH_YEAR_OF_ACCIDENT"
-            if birth_col in self.df.columns:
+            birth_col = next((c for c in
+                              ["BIRTH_YEAR_OF_ACCIDENT", "BIRTH_YEAR_OF_ACCIDENT_PERPETR"]
+                              if c in self.df.columns), None)
+            if birth_col:
                 d = self.df.copy()
-                d["AGE"] = d["ACCIDENT_YEAR"] - pd.to_numeric(
-                    d[birth_col], errors="coerce"
-                )
+                d["AGE"] = d["ACCIDENT_YEAR"] - pd.to_numeric(d[birth_col], errors="coerce")
                 d = d[(d["AGE"] >= 0) & (d["AGE"] <= 90)]
                 age_counts = d.groupby("AGE").size().reset_index(name="count")
-                mean_age = d["AGE"].mean()
+                mean_age = d["AGE"].mean() if len(d) else float("nan")
 
                 fig = px.scatter(
-                    age_counts,
-                    x="AGE",
-                    y="count",
-                    size="count",
+                    age_counts, x="AGE", y="count", size="count",
                     title="Accidents by Driver Age",
                     color_discrete_sequence=["#FF00FF"],
                 )
-                fig.add_annotation(
-                    x=0.98, y=1.06, xref="paper", yref="paper",
-                    text=f"Mean age: {mean_age:.1f}",
-                    showarrow=False,
-                    font=dict(color="#00FFFF", size=12),
+                if pd.notna(mean_age):
+                    fig.add_annotation(
+                        x=0.98, y=1.06, xref="paper", yref="paper",
+                        text=f"Mean age: {mean_age:.1f}",
+                        showarrow=False,
+                        font=dict(color="#00FFFF", size=12),
+                    )
+                fig.update_layout(**chart_layout)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Birth year column not available.")
+
+        with tab3:
+            if "HOUR" in self.df.columns:
+                hour_counts = (
+                    self.df.dropna(subset=["HOUR"])
+                    .groupby("HOUR").size().reset_index(name="count")
+                )
+                fig = px.bar(
+                    hour_counts, x="HOUR", y="count",
+                    title="Accidents by Hour of Day",
+                    color_discrete_sequence=["#00FFFF"],
                 )
                 fig.update_layout(**chart_layout)
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("Birth year column not available in dataset.")
+                st.info("Accident time column not available.")
 
-        with tab3:
-            hour_counts = (
-                self.df.dropna(subset=["HOUR"])
-                .groupby("HOUR")
-                .size()
-                .reset_index(name="count")
-            )
-            fig = px.bar(
-                hour_counts,
-                x="HOUR",
-                y="count",
-                title="Accidents by Hour of Day",
-                color_discrete_sequence=["#00FFFF"],
-            )
-            fig.update_layout(**chart_layout)
-            st.plotly_chart(fig, use_container_width=True)
-
-    # ------------------------------------------------------------
-    # Main entry
     # ------------------------------------------------------------
     def run_dashboard(self) -> None:
         st.set_page_config(
             page_title="TraffiiQ · Accident Analytics",
-            page_icon="🚗",
-            layout="wide",
+            page_icon="🚗", layout="wide",
         )
         self._inject_css()
         self._render_hero()
 
-        if self.df is None or self.df.empty:
-            st.error("No accident data loaded. Check `facc.csv`.")
+        if self.load_error or self.df is None or self.df.empty:
+            st.error("⚠️ Accident data could not be loaded.")
+            if self.load_error:
+                st.markdown(f"**Reason:** {self.load_error}")
+            st.markdown("""
+            ### Check the following
+
+            - `facc.csv` is present in the repo root (same folder as `acc.py`)
+            - It is a real CSV file (not a Git-LFS pointer, not 0 bytes)
+            - The first line contains the column headers
+                `ACCIDENT_YEAR, ACCIDENT_TIME, WEATHER_STATUS, ...`
+            """)
             return
 
         self._render_metrics()
-        self._render_map_section()
+        if self.zones_data:
+            self._render_map_section()
+        else:
+            st.warning("Zone polygons not loaded — map section skipped.")
         self._render_insights()
 
 
