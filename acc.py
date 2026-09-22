@@ -4,6 +4,7 @@ import numpy as np
 import json
 import pydeck as pdk
 import plotly.express as px
+import plotly.graph_objects as go
 from pathlib import Path
 
 
@@ -28,6 +29,10 @@ SEVERITY_MAP = {
     "إﺻﺎﺑﺔ ﺑﺎﻟﻐﺔ": "Severe injury",
     "وﻓﺎة": "Death",
     "وﻓﻳﺎت": "Death",
+    "وﻓﺎة و اﺻﺎﺑﺎت": "Death and injuries",
+    "اﺻﺎﺑﺔ ﺑﺳﻳطﺔ": "Minor injury",
+    "اﺻﺎﺑﺔ ﻣﺗوﺳطﺔ": "Moderate injury",
+    "اﺻﺎﺑﺔ ﺑﻟﻳﻐﺔ": "Severe injury",
 }
 
 NATURE_MAP = {
@@ -59,11 +64,11 @@ DARK = {
         "#0a0a0a"
     ),
     "text": "#f0f0f0",
-    "text_muted": "#8a8a8a",
-    "text_dim": "#5a5a5a",
-    "panel": "rgba(255,255,255,0.04)",
+    "text_muted": "#a0a0a0",
+    "text_dim": "#6a6a6a",
+    "panel": "rgba(255,255,255,0.045)",
     "panel_hover": "rgba(0,255,255,0.06)",
-    "panel_border": "rgba(255,255,255,0.07)",
+    "panel_border": "rgba(255,255,255,0.08)",
     "panel_hover_border": "rgba(0,255,255,0.28)",
     "accent1": "#00FFFF",
     "accent2": "#FF00FF",
@@ -77,47 +82,53 @@ DARK = {
     "map_line":       (90, 90, 90, 180),
     "map_highlight":  (0, 255, 255, 100),
     "legend_gradient": "linear-gradient(90deg, #00dcdc 0%, #ff00ff 50%, #ff2222 100%)",
-    "chart_palette": ["#00FFFF", "#FF00FF", "#FF4466", "#7a4cff", "#39FF14"],
+    "chart_grid": "rgba(255,255,255,0.08)",
+    "chart_palette": ["#00FFFF", "#FF00FF", "#FF4466", "#7a4cff", "#39FF14", "#FFA500"],
     "select_bg": "rgba(255,255,255,0.05)",
+    "select_text": "#f0f0f0",
     "select_border": "rgba(0,255,255,0.25)",
     "select_border_hover": "rgba(0,255,255,0.6)",
+    "toggle_accent": "#00FFFF",
 }
 
 LIGHT = {
     "name": "light",
     "bg_gradient": (
         "radial-gradient(circle at 15% 10%, rgba(128,0,32,0.05), transparent 45%),"
-        "radial-gradient(circle at 85% 5%, rgba(184,155,94,0.08), transparent 45%),"
+        "radial-gradient(circle at 85% 5%, rgba(184,155,94,0.10), transparent 45%),"
         "#FAF7F2"
     ),
     "text": "#1a1a1a",
-    "text_muted": "#6a5a5a",
-    "text_dim": "#9a8a8a",
+    "text_muted": "#555555",
+    "text_dim": "#888888",
     "panel": "#ffffff",
     "panel_hover": "#FDF8F0",
-    "panel_border": "rgba(128,0,32,0.10)",
-    "panel_hover_border": "rgba(128,0,32,0.30)",
+    "panel_border": "rgba(128,0,32,0.12)",
+    "panel_hover_border": "rgba(128,0,32,0.35)",
     "accent1": "#800020",
     "accent2": "#B89B5E",
     "accent3": "#5C0A1F",
     "title_gradient": "linear-gradient(90deg, #800020 0%, #B89B5E 100%)",
     "map_style": LIGHT_MAP_STYLE,
-    "map_color_low":  (232, 213, 165, 150),
-    "map_color_mid":  (184, 155, 94, 210),
-    "map_color_high": (92, 10, 31, 225),
-    "map_zero":       (245, 240, 232, 60),
-    "map_line":       (128, 0, 32, 90),
-    "map_highlight":  (128, 0, 32, 110),
-    "legend_gradient": "linear-gradient(90deg, #E8D5A5 0%, #B89B5E 50%, #5C0A1F 100%)",
-    "chart_palette": ["#800020", "#B89B5E", "#5C0A1F", "#A67B5B", "#3D2B1F"],
+    "map_color_low":  (248, 243, 235, 80),
+    "map_color_mid":  (200, 160, 90, 190),
+    "map_color_high": (128, 0, 32, 230),
+    "map_zero":       (235, 230, 220, 60),
+    "map_line":       (128, 0, 32, 100),
+    "map_highlight":  (128, 0, 32, 120),
+    "legend_gradient": "linear-gradient(90deg, #F8F3EB 0%, #C8A05A 50%, #800020 100%)",
+    "chart_grid": "rgba(128,0,32,0.10)",
+    "chart_palette": ["#800020", "#C8A05A", "#5C0A1F", "#8B5A2B", "#3D2B1F", "#A67B5B"],
     "select_bg": "#ffffff",
+    "select_text": "#1a1a1a",
     "select_border": "rgba(128,0,32,0.25)",
-    "select_border_hover": "rgba(128,0,32,0.6)",
+    "select_border_hover": "rgba(128,0,32,0.7)",
+    "toggle_accent": "#800020",
 }
 
 
 # ============================================================
-# Main dashboard class
+# Main dashboard
 # ============================================================
 class QatarAccidentsStreamlit:
 
@@ -132,7 +143,6 @@ class QatarAccidentsStreamlit:
         self.load_error = None
         self.load_data()
 
-    # ------------------------------------------------------------
     def _load_zone_names(self) -> dict:
         try:
             with open("zone_names.json") as f:
@@ -207,7 +217,9 @@ class QatarAccidentsStreamlit:
     # ------------------------------------------------------------
     def _interpolate_color(self, t: float, theme: dict) -> list:
         t = max(0.0, min(1.0, t))
-        low, mid, high = theme["map_color_low"], theme["map_color_mid"], theme["map_color_high"]
+        low = theme["map_color_low"]
+        mid = theme["map_color_mid"]
+        high = theme["map_color_high"]
         if t <= 0.5:
             u = t / 0.5
             return [int(low[i] + (mid[i] - low[i]) * u) for i in range(4)]
@@ -230,7 +242,7 @@ class QatarAccidentsStreamlit:
             if count == 0:
                 color = list(theme["map_zero"])
             else:
-                t = (count / max_count) ** 0.7
+                t = (count / max_count) ** 0.5
                 color = self._interpolate_color(t, theme)
 
             coords = [[p["lng"], p["lat"]] for p in z["coordinates"]]
@@ -329,7 +341,7 @@ class QatarAccidentsStreamlit:
         return f"{num:,.0f}"
 
     # ============================================================
-    # CSS — dynamic per theme
+    # CSS
     # ============================================================
     def _inject_css(self, t: dict) -> None:
         st.markdown(f"""
@@ -349,8 +361,10 @@ class QatarAccidentsStreamlit:
             --accent2:            {t["accent2"]};
             --accent3:            {t["accent3"]};
             --select-bg:          {t["select_bg"]};
+            --select-text:        {t["select_text"]};
             --select-border:      {t["select_border"]};
             --select-border-hover:{t["select_border_hover"]};
+            --toggle-accent:      {t["toggle_accent"]};
         }}
 
         html, body, [class*="css"], .stApp, .stMarkdown, .stMetric,
@@ -358,10 +372,7 @@ class QatarAccidentsStreamlit:
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }}
 
-        .stApp {{
-            background: var(--bg);
-            color: var(--text);
-        }}
+        .stApp {{ background: var(--bg); color: var(--text); }}
 
         #MainMenu, footer, header {{ visibility: hidden; }}
         .block-container {{ padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1400px; }}
@@ -385,7 +396,6 @@ class QatarAccidentsStreamlit:
             margin-top: 0.3rem;
             margin-bottom: 0.4rem;
             font-weight: 400;
-            letter-spacing: -0.005em;
         }}
         .source-line {{
             color: var(--text-dim);
@@ -408,7 +418,7 @@ class QatarAccidentsStreamlit:
             background: var(--panel);
             border: 1px solid var(--panel-border);
             border-radius: 14px;
-            padding: 18px 22px;
+            padding: 20px 22px;
             height: 100%;
             transition: all .25s ease;
         }}
@@ -467,18 +477,28 @@ class QatarAccidentsStreamlit:
             background-color: var(--select-bg) !important;
             border-color: var(--select-border) !important;
             border-radius: 10px !important;
-            color: var(--text) !important;
+            color: var(--select-text) !important;
             font-weight: 600;
             font-family: 'JetBrains Mono', monospace !important;
         }}
         div[data-baseweb="select"] > div:hover {{
             border-color: var(--select-border-hover) !important;
         }}
+        div[data-baseweb="select"] * {{
+            color: var(--select-text) !important;
+        }}
 
         /* ---- Toggle ---- */
-        div[data-testid="stToggle"] label span {{
+        div[data-testid="stToggle"] label {{
             color: var(--text-muted) !important;
-            font-size: 0.85rem;
+            font-size: 0.85rem !important;
+        }}
+        div[data-testid="stToggle"] div[role="checkbox"] {{
+            border-color: var(--toggle-accent) !important;
+        }}
+        div[data-testid="stToggle"] div[role="checkbox"][aria-checked="true"] {{
+            background-color: var(--toggle-accent) !important;
+            border-color: var(--toggle-accent) !important;
         }}
 
         /* ---- Zone cards ---- */
@@ -532,6 +552,7 @@ class QatarAccidentsStreamlit:
             height: 8px;
             border-radius: 4px;
             background: {t["legend_gradient"]};
+            border: 1px solid var(--panel-border);
         }}
         .legend-label {{
             color: var(--text-dim);
@@ -541,10 +562,7 @@ class QatarAccidentsStreamlit:
         }}
 
         /* ---- Data journalism narrative ---- */
-        .dj-beat {{
-            padding: 3rem 0 1rem 0;
-            max-width: 780px;
-        }}
+        .dj-beat {{ padding: 3rem 0 1rem 0; max-width: 800px; }}
         .dj-kicker {{
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
@@ -588,19 +606,18 @@ class QatarAccidentsStreamlit:
             color: var(--text-dim);
             margin-bottom: 6px;
         }}
-        .source-footer .source-value {{
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }}
+        .source-footer .source-value {{ color: var(--text-muted); font-size: 0.9rem; }}
         .source-footer a {{
             color: var(--accent1);
             text-decoration: none;
             border-bottom: 1px solid transparent;
             transition: border-color .2s ease;
         }}
-        .source-footer a:hover {{
-            border-bottom-color: var(--accent1);
-        }}
+        .source-footer a:hover {{ border-bottom-color: var(--accent1); }}
+
+        /* Plotly chart container – keep transparent */
+        .stPlotlyChart {{ background: transparent !important; }}
+        .stPlotlyChart > div {{ background: transparent !important; }}
 
         iframe {{ border-radius: 14px; }}
         .element-container {{ margin-bottom: 0.6rem; }}
@@ -608,12 +625,12 @@ class QatarAccidentsStreamlit:
         """, unsafe_allow_html=True)
 
     # ============================================================
-    # Render sections
+    # Rendering
     # ============================================================
-    def _render_masthead(self, theme: dict) -> None:
+    def _render_masthead(self) -> None:
         top_l, top_r = st.columns([6, 1], vertical_alignment="center")
         with top_l:
-            st.markdown('<h1 class="hero-title">TraffiiQ</h1>', unsafe_allow_html=True)
+            st.markdown('<h1 class="hero-title">TRAFIQ</h1>', unsafe_allow_html=True)
         with top_r:
             st.toggle("Light mode", key="light_mode")
 
@@ -628,7 +645,7 @@ class QatarAccidentsStreamlit:
             unsafe_allow_html=True,
         )
 
-    def _render_metrics(self, theme: dict) -> None:
+    def _render_metrics(self) -> None:
         m = self.calculate_metrics()
         cards = [
             ("Annual Avg. Accidents", self.format_number(m["annual_avg"]), "1", "2020+"),
@@ -699,7 +716,49 @@ class QatarAccidentsStreamlit:
             self._render_zone_list(year)
 
     # ------------------------------------------------------------
-    # Story beats (data journalism)
+    # Plotly helpers
+    # ------------------------------------------------------------
+    def _apply_plotly_theme(self, fig, theme: dict, showlegend: bool = False) -> None:
+        fig.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Space Grotesk, sans-serif",
+                color=theme["text"],
+                size=12,
+            ),
+            title=dict(font=dict(color=theme["text"], size=14)),
+            legend=dict(
+                font=dict(color=theme["text"], size=11),
+                bgcolor="rgba(0,0,0,0)",
+                bordercolor=theme["panel_border"],
+                borderwidth=0,
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="left",
+                x=0,
+            ),
+            xaxis=dict(
+                title=dict(font=dict(color=theme["text"], size=12)),
+                tickfont=dict(color=theme["text_muted"], size=11),
+                gridcolor=theme["chart_grid"],
+                zeroline=False,
+                linecolor=theme["panel_border"],
+            ),
+            yaxis=dict(
+                title=dict(font=dict(color=theme["text"], size=12)),
+                tickfont=dict(color=theme["text_muted"], size=11),
+                gridcolor=theme["chart_grid"],
+                zeroline=False,
+                linecolor=theme["panel_border"],
+            ),
+            showlegend=showlegend,
+            margin=dict(l=10, r=10, t=20, b=10),
+        )
+
+    # ------------------------------------------------------------
+    # Story beats
     # ------------------------------------------------------------
     def _story_header(self, kicker: str, headline: str, deck: str) -> None:
         st.markdown(f"""
@@ -710,54 +769,47 @@ class QatarAccidentsStreamlit:
         </div>
         """, unsafe_allow_html=True)
 
-    def _plotly_layout(self, theme: dict) -> dict:
-        return dict(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font_color=theme["text"],
-            font_family="Space Grotesk, sans-serif",
-            margin=dict(l=10, r=10, t=10, b=10),
-            xaxis=dict(gridcolor=theme["panel_border"], zeroline=False),
-            yaxis=dict(gridcolor=theme["panel_border"], zeroline=False),
-        )
-
     def _story_severity(self, theme: dict) -> None:
+        severity_col = "SEVERITY_EN" if "SEVERITY_EN" in self.df.columns else "ACCIDENT_SEVERITY"
+        nature_col = "NATURE_EN" if "NATURE_EN" in self.df.columns else None
+        if severity_col not in self.df.columns or not nature_col:
+            return
+
         self._story_header(
             "01 · Severity",
             "What kinds of accidents get recorded?",
-            "Every incident carries a severity tag. Simple incidents and light "
-            "injuries dominate the count, but pedestrian collisions carry a "
-            "disproportionate share of fatalities.",
+            "Nearly all incidents fall into a small number of collision types. "
+            "Vehicle-to-vehicle collisions dominate the record, with pedestrian "
+            "collisions forming a small but high-fatality slice.",
         )
 
-        candidates = [
-            "NATIONALITY_GROUP_OF_ACCIDENT",
-            "NATURE_EN",
-            "ACCIDENT_NATURE",
-            "ACCIDENT_REASON",
-        ]
-        available = [c for c in candidates if c in self.df.columns]
-        severity_col = "SEVERITY_EN" if "SEVERITY_EN" in self.df.columns else "ACCIDENT_SEVERITY"
-
-        if not available or severity_col not in self.df.columns:
-            st.info("Breakdown columns not available.")
-            return
-
-        category = st.selectbox(
-            "Break down by:",
-            available,
-            format_func=lambda x: x.replace("_", " ").strip().title(),
-            key="cat_select",
+        top_natures = (
+            self.df[nature_col]
+            .value_counts()
+            .head(5)
+            .index
+            .tolist()
         )
+        d = self.df[self.df[nature_col].isin(top_natures)].copy()
+
         counts = (
-            self.df.groupby([category, severity_col])
-            .size().unstack(fill_value=0)
+            d.groupby([nature_col, severity_col])
+            .size()
+            .unstack(fill_value=0)
+            .loc[top_natures]
         )
+
         fig = px.bar(
-            counts, barmode="stack",
+            counts,
+            barmode="stack",
             color_discrete_sequence=theme["chart_palette"],
         )
-        fig.update_layout(**self._plotly_layout(theme), showlegend=True)
+        fig.update_layout(barmode="stack")
+        fig.update_yaxes(title_text="Accidents", tickfont=dict(color=theme["text_muted"]))
+        fig.update_xaxes(title_text="", tickangle=0)
+
+        self._apply_plotly_theme(fig, theme, showlegend=True)
+        fig.update_layout(height=420, bargap=0.35)
         st.plotly_chart(fig, use_container_width=True)
 
     def _story_age(self, theme: dict) -> None:
@@ -781,16 +833,23 @@ class QatarAccidentsStreamlit:
             "02 · Drivers",
             "Who is behind the wheel when accidents happen?",
             f"Filtered to drivers between 15 and 90, the distribution peaks in "
-            f"the late 30s. The mean age across all recorded accidents is "
+            f"the late 30s. Mean age across all recorded accidents is "
             f"{mean_age:.1f} years.",
         )
 
         age_counts = d.groupby("AGE").size().reset_index(name="count")
+
         fig = px.scatter(
-            age_counts, x="AGE", y="count", size="count",
+            age_counts,
+            x="AGE", y="count",
             color_discrete_sequence=[theme["accent1"]],
         )
-        fig.update_layout(**self._plotly_layout(theme), showlegend=False)
+        fig.update_traces(marker=dict(size=9, line=dict(width=0)))
+        fig.update_xaxes(title_text="Driver age (years)")
+        fig.update_yaxes(title_text="Accidents")
+
+        self._apply_plotly_theme(fig, theme, showlegend=False)
+        fig.update_layout(height=400)
         st.plotly_chart(fig, use_container_width=True)
 
     def _story_hour(self, theme: dict) -> None:
@@ -809,28 +868,32 @@ class QatarAccidentsStreamlit:
         self._story_header(
             "03 · Time",
             "When do accidents happen most?",
-            f"The hourly pattern is unmistakable. The daily peak lands at "
-            f"around {peak_label}, aligning with evening rush. Early morning "
-            f"hours remain the safest window.",
+            f"The hourly pattern is unmistakable. The daily peak lands around "
+            f"{peak_label}, aligning with evening rush. Early morning hours "
+            f"remain the safest window.",
         )
 
         fig = px.bar(
             hour_counts, x="HOUR", y="count",
             color_discrete_sequence=[theme["accent2"]],
         )
-        fig.update_layout(**self._plotly_layout(theme), showlegend=False)
         fig.update_xaxes(
+            title_text="Hour of day",
             tickmode="array",
             tickvals=list(range(0, 24, 2)),
             ticktext=[f"{h:02d}h" for h in range(0, 24, 2)],
         )
+        fig.update_yaxes(title_text="Accidents")
+
+        self._apply_plotly_theme(fig, theme, showlegend=False)
+        fig.update_layout(height=400, bargap=0.15)
         st.plotly_chart(fig, use_container_width=True)
 
     def _render_story(self, theme: dict) -> None:
         st.markdown('<hr class="dj-divider"/>', unsafe_allow_html=True)
         self._story_severity(theme)
-        self._story_hour(theme)
         self._story_age(theme)
+        self._story_hour(theme)
 
     def _render_footer(self) -> None:
         st.markdown(f"""
@@ -848,20 +911,15 @@ class QatarAccidentsStreamlit:
     # Main
     # ============================================================
     def run_dashboard(self) -> None:
-        st.set_page_config(
-            page_title="TraffiiQ",
-            layout="wide",
-        )
+        st.set_page_config(page_title="TRAFIQ", layout="wide")
 
-        # Resolve theme early — needed before CSS injection
         if "light_mode" not in st.session_state:
             st.session_state.light_mode = False
 
-        is_light = st.session_state.light_mode
-        theme = LIGHT if is_light else DARK
+        theme = LIGHT if st.session_state.light_mode else DARK
 
         self._inject_css(theme)
-        self._render_masthead(theme)
+        self._render_masthead()
 
         if self.load_error or self.df is None or self.df.empty:
             st.error("Accident data could not be loaded.")
@@ -869,7 +927,7 @@ class QatarAccidentsStreamlit:
                 st.markdown(f"**Reason:** {self.load_error}")
             return
 
-        self._render_metrics(theme)
+        self._render_metrics()
         st.markdown('<div style="height: 28px;"></div>', unsafe_allow_html=True)
 
         if self.zones_data:
