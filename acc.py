@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import json
 from streamlit_folium import st_folium
-import folium
 import folium
 from folium import plugins
 import branca.colormap as cm
@@ -13,6 +13,7 @@ import calendar
 from pathlib import Path
 import branca.element as be
 
+
 class QatarAccidentsStreamlit:
     def __init__(self, accidents_file='facc.csv', polygons_file='qatar_zones_polygons.json'):
         self.accidents_file = accidents_file
@@ -21,7 +22,7 @@ class QatarAccidentsStreamlit:
         self.zones_data = None
         self.zone_names = self.initialize_zone_names()
         self.current_year = None
-        
+
         # Color scheme
         self.colors = {
             'background': '#111111',
@@ -31,10 +32,10 @@ class QatarAccidentsStreamlit:
             'neon_green': '#39FF14',
             'maroon': '#800000'
         }
-        
+
         # Load and process data
         self.load_data()
-        
+
     def initialize_zone_names(self):
         try:
             with open('zone_names.json', 'r') as f:
@@ -51,26 +52,42 @@ class QatarAccidentsStreamlit:
         if not Path(self.accidents_file).is_file():
             st.error(f"Accidents file '{self.accidents_file}' not found. Please ensure the file is available.")
             return
-        
+
         # Load accidents data
         self.df = pd.read_csv(self.accidents_file, skipinitialspace=True)
-        
-        # Clean data
-        self.df['ZONE'] = self.df['ZONE'].astype(str).str.strip()
-        self.df['ZONE'] = self.df['ZONE'].apply(lambda x: 
-            str(int(float(x))) if x.replace('.', '').isdigit() else 'Unknown')
-        
-        # Convert time to hour
-        self.df['HOUR'] = self.df['ACCIDENT_TIME'].str.extract('(\d+)').astype(float)
-        
+
+        # ------------------------------------------------------------------
+        # Clean ZONE column (Arrow / Pandas 3.0 safe)
+        # Handles: NaN floats, "93.0", "  93 ", "UNKNOWN", "", None, etc.
+        # ------------------------------------------------------------------
+        zone_numeric = pd.to_numeric(
+            self.df['ZONE'].astype(str).str.strip(),
+            errors='coerce'
+        )
+        self.df['ZONE'] = np.where(
+            zone_numeric.notna(),
+            zone_numeric.fillna(0).astype(int).astype(str),
+            'Unknown'
+        )
+
+        # ------------------------------------------------------------------
+        # Convert time to hour (raw string regex)
+        # ------------------------------------------------------------------
+        self.df['HOUR'] = (
+            self.df['ACCIDENT_TIME']
+            .astype(str)
+            .str.extract(r'(\d+)', expand=False)
+            .astype(float)
+        )
+
         # Set current year to the most recent year
         self.current_year = self.df['ACCIDENT_YEAR'].max()
-        
+
         # Check if polygons file exists
         if not Path(self.polygons_file).is_file():
             st.warning(f"Polygon file '{self.polygons_file}' not found. Please ensure the file is available.")
             return
-        
+
         # Load polygon data
         try:
             with open(self.polygons_file, 'r') as f:
@@ -86,33 +103,33 @@ class QatarAccidentsStreamlit:
             tiles='CartoDB dark_matter',
             prefer_canvas=True
         )
-        
+
         # Get accident counts for the selected year
         year_data = self.df[self.df['ACCIDENT_YEAR'] == year]
         zone_counts = year_data['ZONE'].value_counts().to_dict()
         max_count = max(zone_counts.values()) if zone_counts else 1
-        
+
         # Create color scale
         colormap = cm.LinearColormap(
             colors=['#ff00ff', '#00ffff', '#ff0000'],
             vmin=0,
             vmax=max_count
         )
-        
+
         # Add zones to map
         for zone, count in zone_counts.items():
             try:
-                if zone.lower() == 'unknown':
+                if str(zone).lower() == 'unknown':
                     continue
-                    
+
                 zone_int = str(int(float(zone)))
-                zone_data = self.zones_data.get(zone_int)
+                zone_data = self.zones_data.get(zone_int) if self.zones_data else None
                 zone_name = self.zone_names.get(zone_int, f'Zone {zone_int}')
-                
+
                 if zone_data:
                     coordinates = [[p['lat'], p['lng']] for p in zone_data['coordinates']]
                     opacity = 0.2 + (count / max_count * 0.8)
-                    
+
                     folium.Polygon(
                         locations=coordinates,
                         weight=0,
@@ -122,31 +139,33 @@ class QatarAccidentsStreamlit:
                         popup=f'{zone_name}<br>Accidents: {count}',
                         tooltip=zone_name
                     ).add_to(m)
-                    
+
             except Exception as e:
                 st.error(f"Error processing zone {zone}: {str(e)}")
-                
+
         # Add the color scale
         colormap.add_to(m)
-        
+
         return m
 
     def calculate_metrics(self):
         # Calculate annual average accidents from 2020 onwards
         recent_data = self.df[self.df['ACCIDENT_YEAR'] >= 2020]
-        annual_avg = len(recent_data) / len(recent_data['ACCIDENT_YEAR'].unique())
-        
-        # Calculate total deaths till 2024
-        total_deaths = self.df['DEATH_COUNT'].sum()
-        
+        n_years = len(recent_data['ACCIDENT_YEAR'].unique())
+        annual_avg = len(recent_data) / n_years if n_years > 0 else 0
+
+        # Calculate total deaths
+        total_deaths = pd.to_numeric(self.df['DEATH_COUNT'], errors='coerce').fillna(0).sum()
+
         # Calculate pedestrian collision deaths
-        pedestrian_deaths = self.df[
-            self.df['ACCIDENT_NATURE'] == 'COLLISION WITH PEDESTRIANS'
-        ]['DEATH_COUNT'].sum()
-        
+        pedestrian_deaths = pd.to_numeric(
+            self.df[self.df['ACCIDENT_NATURE'] == 'COLLISION WITH PEDESTRIANS']['DEATH_COUNT'],
+            errors='coerce'
+        ).fillna(0).sum()
+
         # Calculate total accidents
         total_accidents = len(self.df)
-        
+
         return {
             'annual_avg': round(annual_avg, 1),
             'total_deaths': int(total_deaths),
@@ -156,9 +175,9 @@ class QatarAccidentsStreamlit:
 
     def format_number(self, num):
         if num >= 1_000_000:
-            return f'{num/1_000_000:.1f}M+'
+            return f'{num / 1_000_000:.1f}M+'
         elif num >= 1_000:
-            return f'{num/1_000:.1f}K+'
+            return f'{num / 1_000:.1f}K+'
         else:
             return str(num)
 
@@ -206,10 +225,15 @@ class QatarAccidentsStreamlit:
 
         # Title
         st.markdown("<h1 style='text-align: center; color: #00FFFF;'>TraffiiQ</h1>", unsafe_allow_html=True)
-        
+
+        # Guard: data must be loaded
+        if self.df is None or self.df.empty:
+            st.error("No accident data available. Please check your data files.")
+            return
+
         # Calculate metrics
         metrics = self.calculate_metrics()
-        
+
         # Metrics row
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -223,26 +247,27 @@ class QatarAccidentsStreamlit:
 
         # Main content
         col_map, col_stats = st.columns([2, 1])
-        
+
         with col_map:
             # Year selector
+            years = sorted(self.df['ACCIDENT_YEAR'].dropna().unique().tolist())
             year = st.selectbox(
                 'Select Year:',
-                sorted(self.df['ACCIDENT_YEAR'].unique()),
-                index=len(self.df['ACCIDENT_YEAR'].unique()) - 1
+                years,
+                index=len(years) - 1
             )
-            
+
             # Create and display map using streamlit-folium
             st_map = self.create_map(year)
-            st_folium(st_map, width=900, height=500)
+            st_folium(st_map, width=900, height=500, key=f"map_{year}")
 
         with col_stats:
             st.markdown("<h3 style='color: #FF00FF;'>Zone Statistics</h3>", unsafe_allow_html=True)
-            
+
             # Zone statistics
             year_data = self.df[self.df['ACCIDENT_YEAR'] == year]
             zone_counts = year_data['ZONE'].value_counts().sort_values(ascending=False).head(8)
-            
+
             for zone, count in zone_counts.items():
                 zone_name = self.zone_names.get(str(zone), f'Zone {zone}')
                 st.markdown(f"""
@@ -259,20 +284,25 @@ class QatarAccidentsStreamlit:
 
         # Additional visualizations
         st.markdown("<h3 style='color: #FF00FF; margin-top: 20px;'>Additional Insights</h3>", unsafe_allow_html=True)
-        
+
         viz_col1, viz_col2 = st.columns(2)
-        
+
         with viz_col1:
             # Severity by category
             category = st.selectbox(
                 'Select Category:',
-                ['NATIONALITY_GROUP_OF_ACCIDENT_', 'ACCIDENT_NATURE', 'ACCIDENT_REASON'],
+                ['NATIONALITY_GROUP_OF_ACCIDENT', 'ACCIDENT_NATURE', 'ACCIDENT_REASON'],
                 format_func=lambda x: x.replace('_', ' ').title()
             )
-            
-            severity_counts = self.df.groupby([category, 'ACCIDENT_SEVERITY']).size().unstack().fillna(0)
+
+            severity_counts = (
+                self.df.groupby([category, 'ACCIDENT_SEVERITY'])
+                .size()
+                .unstack()
+                .fillna(0)
+            )
             fig_severity = px.bar(
-                severity_counts, 
+                severity_counts,
                 barmode='stack',
                 title='Accident Severity by ' + category.replace('_', ' ').title()
             )
@@ -285,14 +315,21 @@ class QatarAccidentsStreamlit:
 
         with viz_col2:
             # Age scatter plot
-            year_data = self.df[self.df['ACCIDENT_YEAR'] == year]
-            year_data['AGE'] = year_data['BIRTH_YEAR_OF_ACCIDENT_PERPETR'].apply(
-                lambda x: year - x if pd.notnull(x) else None
-            )
+            year_data = self.df[self.df['ACCIDENT_YEAR'] == year].copy()
+
+            # Use the actual CSV column name: BIRTH_YEAR_OF_ACCIDENT
+            birth_year_col = 'BIRTH_YEAR_OF_ACCIDENT'
+            if birth_year_col in year_data.columns:
+                birth_years = pd.to_numeric(year_data[birth_year_col], errors='coerce')
+                year_data['AGE'] = year - birth_years
+            else:
+                year_data['AGE'] = np.nan
+
             year_data = year_data[(year_data['AGE'] >= 0) & (year_data['AGE'] <= 90)]
             age_counts = year_data.groupby('AGE').size().reset_index(name='ACCIDENT_COUNT')
-            mean_age = year_data['AGE'].mean()
-            
+
+            mean_age = year_data['AGE'].mean() if len(year_data) > 0 else float('nan')
+
             fig_age = px.scatter(
                 age_counts,
                 x='AGE',
@@ -303,7 +340,7 @@ class QatarAccidentsStreamlit:
             fig_age.add_annotation(
                 xref="paper", yref="paper",
                 x=0.95, y=1.05,
-                text=f"Mean Age: {mean_age:.1f}",
+                text=f"Mean Age: {mean_age:.1f}" if pd.notna(mean_age) else "Mean Age: N/A",
                 showarrow=False,
                 font=dict(size=12, color=self.colors['text']),
                 align="right"
@@ -314,6 +351,7 @@ class QatarAccidentsStreamlit:
                 font_color=self.colors['text']
             )
             st.plotly_chart(fig_age, use_container_width=True)
+
 
 if __name__ == "__main__":
     dashboard = QatarAccidentsStreamlit()
