@@ -8,9 +8,13 @@ from pathlib import Path
 
 
 # ============================================================
-# Map style — Carto Dark Matter GL style (string URL, no API key)
+# Constants
 # ============================================================
+SOURCE_URL = "https://www.data.gov.qa/explore/dataset/accident/information/"
+SOURCE_LABEL = "Ministry of Interior · Open Data Portal"
+
 DARK_MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+LIGHT_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 
 
 # ============================================================
@@ -44,6 +48,77 @@ def _translate(series: pd.Series, mapping: dict) -> pd.Series:
     return translated.fillna(stripped)
 
 
+# ============================================================
+# Themes
+# ============================================================
+DARK = {
+    "name": "dark",
+    "bg_gradient": (
+        "radial-gradient(circle at 15% 10%, rgba(255,0,255,0.08), transparent 45%),"
+        "radial-gradient(circle at 85% 5%, rgba(0,255,255,0.07), transparent 45%),"
+        "#0a0a0a"
+    ),
+    "text": "#f0f0f0",
+    "text_muted": "#8a8a8a",
+    "text_dim": "#5a5a5a",
+    "panel": "rgba(255,255,255,0.04)",
+    "panel_hover": "rgba(0,255,255,0.06)",
+    "panel_border": "rgba(255,255,255,0.07)",
+    "panel_hover_border": "rgba(0,255,255,0.28)",
+    "accent1": "#00FFFF",
+    "accent2": "#FF00FF",
+    "accent3": "#FF4466",
+    "title_gradient": "linear-gradient(90deg, #00FFFF 0%, #FF00FF 60%, #FF3355 100%)",
+    "map_style": DARK_MAP_STYLE,
+    "map_color_low":  (0, 220, 255, 120),
+    "map_color_mid":  (255, 0, 255, 220),
+    "map_color_high": (255, 60, 0, 200),
+    "map_zero":       (40, 40, 40, 30),
+    "map_line":       (90, 90, 90, 180),
+    "map_highlight":  (0, 255, 255, 100),
+    "legend_gradient": "linear-gradient(90deg, #00dcdc 0%, #ff00ff 50%, #ff2222 100%)",
+    "chart_palette": ["#00FFFF", "#FF00FF", "#FF4466", "#7a4cff", "#39FF14"],
+    "select_bg": "rgba(255,255,255,0.05)",
+    "select_border": "rgba(0,255,255,0.25)",
+    "select_border_hover": "rgba(0,255,255,0.6)",
+}
+
+LIGHT = {
+    "name": "light",
+    "bg_gradient": (
+        "radial-gradient(circle at 15% 10%, rgba(128,0,32,0.05), transparent 45%),"
+        "radial-gradient(circle at 85% 5%, rgba(184,155,94,0.08), transparent 45%),"
+        "#FAF7F2"
+    ),
+    "text": "#1a1a1a",
+    "text_muted": "#6a5a5a",
+    "text_dim": "#9a8a8a",
+    "panel": "#ffffff",
+    "panel_hover": "#FDF8F0",
+    "panel_border": "rgba(128,0,32,0.10)",
+    "panel_hover_border": "rgba(128,0,32,0.30)",
+    "accent1": "#800020",
+    "accent2": "#B89B5E",
+    "accent3": "#5C0A1F",
+    "title_gradient": "linear-gradient(90deg, #800020 0%, #B89B5E 100%)",
+    "map_style": LIGHT_MAP_STYLE,
+    "map_color_low":  (232, 213, 165, 150),
+    "map_color_mid":  (184, 155, 94, 210),
+    "map_color_high": (92, 10, 31, 225),
+    "map_zero":       (245, 240, 232, 60),
+    "map_line":       (128, 0, 32, 90),
+    "map_highlight":  (128, 0, 32, 110),
+    "legend_gradient": "linear-gradient(90deg, #E8D5A5 0%, #B89B5E 50%, #5C0A1F 100%)",
+    "chart_palette": ["#800020", "#B89B5E", "#5C0A1F", "#A67B5B", "#3D2B1F"],
+    "select_bg": "#ffffff",
+    "select_border": "rgba(128,0,32,0.25)",
+    "select_border_hover": "rgba(128,0,32,0.6)",
+}
+
+
+# ============================================================
+# Main dashboard class
+# ============================================================
 class QatarAccidentsStreamlit:
 
     def __init__(self,
@@ -72,7 +147,7 @@ class QatarAccidentsStreamlit:
             self.load_error = f"`{self.accidents_file}` not found."
             return
         if p.stat().st_size == 0:
-            self.load_error = f"`{self.accidents_file}` is empty (0 bytes)."
+            self.load_error = f"`{self.accidents_file}` is empty."
             return
 
         try:
@@ -130,36 +205,22 @@ class QatarAccidentsStreamlit:
                 st.warning(f"Could not load polygons: {e}")
 
     # ------------------------------------------------------------
-    # Color scale: cool cyan (low) → magenta (mid) → hot red (high)
-    # Zero-count zones stay nearly invisible
-    # ------------------------------------------------------------
-    @staticmethod
-    def _interpolate_color(t: float) -> list:
-        """t in [0,1]: 0 = cool cyan, 0.5 = magenta, 1 = hot red."""
+    def _interpolate_color(self, t: float, theme: dict) -> list:
         t = max(0.0, min(1.0, t))
+        low, mid, high = theme["map_color_low"], theme["map_color_mid"], theme["map_color_high"]
         if t <= 0.5:
             u = t / 0.5
-            r = int(0 + u * 255)
-            g = int(220 * (1 - u))
-            b = int(255 - u * 0)
-            a = int(120 + u * 100)
-        else:
-            u = (t - 0.5) / 0.5
-            r = int(255)
-            g = int(0 + u * 60)
-            b = int(255 * (1 - u))
-            a = int(220 - u * 20)
-        return [r, g, b, a]
+            return [int(low[i] + (mid[i] - low[i]) * u) for i in range(4)]
+        u = (t - 0.5) / 0.5
+        return [int(mid[i] + (high[i] - mid[i]) * u) for i in range(4)]
 
     # ------------------------------------------------------------
-    def build_geojson(self, year: int) -> dict:
+    def build_geojson(self, year: int, theme: dict) -> dict:
         if self.df is None or self.zones_data is None:
             return {"type": "FeatureCollection", "features": []}
 
         year_data = self.df[self.df["ACCIDENT_YEAR"] == year]
         zone_counts = year_data["ZONE"].value_counts().to_dict()
-
-        # Rank-based normalization for smoother distribution
         counts = sorted(zone_counts.values(), reverse=True)
         max_count = counts[0] if counts else 1
 
@@ -167,11 +228,10 @@ class QatarAccidentsStreamlit:
         for zone_id, z in self.zones_data.items():
             count = int(zone_counts.get(zone_id, 0))
             if count == 0:
-                color = [40, 40, 40, 30]
+                color = list(theme["map_zero"])
             else:
-                # Use log-ish scale so mid-range zones stay visible
                 t = (count / max_count) ** 0.7
-                color = self._interpolate_color(t)
+                color = self._interpolate_color(t, theme)
 
             coords = [[p["lng"], p["lat"]] for p in z["coordinates"]]
             features.append({
@@ -187,44 +247,41 @@ class QatarAccidentsStreamlit:
         return {"type": "FeatureCollection", "features": features}
 
     # ------------------------------------------------------------
-    def create_map(self, year: int) -> pdk.Deck:
-        geojson = self.build_geojson(year)
+    def create_map(self, year: int, theme: dict) -> pdk.Deck:
+        geojson = self.build_geojson(year, theme)
 
         layer = pdk.Layer(
             "GeoJsonLayer",
             data=geojson,
             get_fill_color="properties.color",
-            get_line_color=[90, 90, 90, 180],
+            get_line_color=list(theme["map_line"]),
             get_line_width=1.2,
             line_width_min_pixels=1,
             pickable=True,
             auto_highlight=True,
-            highlight_color=[0, 255, 255, 100],
+            highlight_color=list(theme["map_highlight"]),
             filled=True,
             stroked=True,
         )
 
         view_state = pdk.ViewState(
-            latitude=25.2867,
-            longitude=51.5333,
-            zoom=10.6,
-            pitch=0,
-            bearing=0,
+            latitude=25.2867, longitude=51.5333,
+            zoom=10.6, pitch=0, bearing=0,
         )
 
         return pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            map_style=DARK_MAP_STYLE,
+            map_style=theme["map_style"],
             tooltip={
                 "html": "<b>{name}</b><br/>Accidents: <b>{count}</b>",
                 "style": {
-                    "backgroundColor": "#0f0f0f",
-                    "color": "#00FFFF",
+                    "backgroundColor": theme["panel"],
+                    "color": theme["accent1"],
                     "fontFamily": "Space Grotesk, sans-serif",
                     "borderRadius": "8px",
                     "padding": "8px 12px",
-                    "border": "1px solid rgba(0,255,255,0.3)",
+                    "border": f"1px solid {theme['panel_border']}",
                 },
             },
         )
@@ -272,215 +329,312 @@ class QatarAccidentsStreamlit:
         return f"{num:,.0f}"
 
     # ============================================================
-    # UI
+    # CSS — dynamic per theme
     # ============================================================
-    def _inject_css(self) -> None:
-        st.markdown("""
+    def _inject_css(self, t: dict) -> None:
+        st.markdown(f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
+        :root {{
+            --bg:                 {t["bg_gradient"]};
+            --text:               {t["text"]};
+            --text-muted:         {t["text_muted"]};
+            --text-dim:           {t["text_dim"]};
+            --panel:              {t["panel"]};
+            --panel-hover:        {t["panel_hover"]};
+            --panel-border:       {t["panel_border"]};
+            --panel-hover-border: {t["panel_hover_border"]};
+            --accent1:            {t["accent1"]};
+            --accent2:            {t["accent2"]};
+            --accent3:            {t["accent3"]};
+            --select-bg:          {t["select_bg"]};
+            --select-border:      {t["select_border"]};
+            --select-border-hover:{t["select_border_hover"]};
+        }}
+
         html, body, [class*="css"], .stApp, .stMarkdown, .stMetric,
-        button, input, select, textarea {
+        button, input, select, textarea {{
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        }
+        }}
 
-        .stApp {
-            background:
-                radial-gradient(circle at 15% 10%, rgba(255,0,255,0.08), transparent 45%),
-                radial-gradient(circle at 85% 5%, rgba(0,255,255,0.07), transparent 45%),
-                #0a0a0a;
-            color: #f0f0f0;
-        }
+        .stApp {{
+            background: var(--bg);
+            color: var(--text);
+        }}
 
-        #MainMenu, footer, header { visibility: hidden; }
-        .block-container { padding-top: 1rem; padding-bottom: 3rem; max-width: 1400px; }
+        #MainMenu, footer, header {{ visibility: hidden; }}
+        .block-container {{ padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1400px; }}
 
-        .hero-title {
-            font-size: 3.2rem; font-weight: 700;
-            letter-spacing: -0.035em;
-            background: linear-gradient(90deg, #00FFFF 0%, #FF00FF 60%, #FF3355 100%);
+        /* ---- Masthead ---- */
+        .hero-title {{
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.4rem;
+            font-weight: 700;
+            letter-spacing: -0.045em;
+            background: {t["title_gradient"]};
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin: 0; line-height: 1.05;
-        }
-        .hero-sub {
-            color: #8a8a8a; font-size: 1.05rem;
-            margin-top: 0.4rem; margin-bottom: 2rem; font-weight: 400;
-        }
-        .home-button {
-            display: inline-flex; align-items: center; gap: 6px;
-            color: #b0b0b0; text-decoration: none; font-weight: 500;
-            padding: 6px 12px; border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
-            transition: all .2s ease; margin-bottom: 1rem;
-        }
-        .home-button:hover { color: #00FFFF; border-color: rgba(0,255,255,0.4); }
+            margin: 0;
+            line-height: 1;
+        }}
+        .hero-sub {{
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.4rem;
+            font-weight: 400;
+            letter-spacing: -0.005em;
+        }}
+        .source-line {{
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            letter-spacing: 0.02em;
+            margin-bottom: 2rem;
+        }}
+        .source-line a {{
+            color: var(--text-dim);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--text-dim);
+        }}
+        .source-line a:hover {{
+            color: var(--accent1);
+            border-bottom-color: var(--accent1);
+        }}
 
         /* ---- Metric cards ---- */
-        .metric-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.012) 100%);
-            border: 1px solid rgba(255,255,255,0.07);
+        .metric-card {{
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
             border-radius: 14px;
             padding: 18px 22px;
             height: 100%;
             transition: all .25s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .metric-card:hover {
-            border-color: rgba(0,255,255,0.28);
+        }}
+        .metric-card:hover {{
+            background: var(--panel-hover);
+            border-color: var(--panel-hover-border);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,255,255,0.06);
-        }
-        .metric-label {
-            color: #8a8a8a; font-size: 0.72rem; font-weight: 500;
-            text-transform: uppercase; letter-spacing: 0.1em;
+        }}
+        .metric-label {{
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
             margin-bottom: 10px;
-        }
-        .metric-value {
+        }}
+        .metric-value {{
             font-family: 'JetBrains Mono', monospace;
-            font-size: 2.05rem; font-weight: 600;
-            color: #ffffff; line-height: 1;
-        }
-        .metric-accent-cyan { color: #00FFFF; }
-        .metric-accent-pink { color: #FF66FF; }
-        .metric-accent-red  { color: #FF4466; }
-        .metric-sub {
-            color: #5a5a5a; font-size: 0.68rem;
+            font-size: 2.05rem;
+            font-weight: 600;
+            line-height: 1;
+            color: var(--text);
+        }}
+        .metric-accent-1 {{ color: var(--accent1); }}
+        .metric-accent-2 {{ color: var(--accent2); }}
+        .metric-accent-3 {{ color: var(--accent3); }}
+        .metric-sub {{
+            color: var(--text-dim);
+            font-size: 0.68rem;
             margin-top: 10px;
-            text-transform: uppercase; letter-spacing: 0.09em;
-        }
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+        }}
 
         /* ---- Section title ---- */
-        .section-title {
-            font-size: 1.3rem; font-weight: 600; color: #ffffff;
-            margin: 0; letter-spacing: -0.015em;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .section-title::before {
-            content: ''; width: 4px; height: 20px;
-            background: linear-gradient(180deg, #00FFFF, #FF00FF);
+        .section-title {{
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+            letter-spacing: -0.015em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .section-title::before {{
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, var(--accent1), var(--accent2));
             border-radius: 2px;
-        }
+        }}
 
-        /* ---- Year selector: make it compact & aligned ---- */
-        div[data-baseweb="select"] > div {
-            background-color: rgba(255,255,255,0.05) !important;
-            border-color: rgba(0,255,255,0.25) !important;
+        /* ---- Selectbox ---- */
+        div[data-baseweb="select"] > div {{
+            background-color: var(--select-bg) !important;
+            border-color: var(--select-border) !important;
             border-radius: 10px !important;
-            color: #ffffff !important;
+            color: var(--text) !important;
             font-weight: 600;
             font-family: 'JetBrains Mono', monospace !important;
-        }
-        div[data-baseweb="select"] > div:hover {
-            border-color: rgba(0,255,255,0.6) !important;
-        }
+        }}
+        div[data-baseweb="select"] > div:hover {{
+            border-color: var(--select-border-hover) !important;
+        }}
 
-        /* ---- Zone cards with rank badge ---- */
-        .zone-card {
+        /* ---- Toggle ---- */
+        div[data-testid="stToggle"] label span {{
+            color: var(--text-muted) !important;
+            font-size: 0.85rem;
+        }}
+
+        /* ---- Zone cards ---- */
+        .zone-card {{
             display: grid;
             grid-template-columns: 26px 1fr auto;
             align-items: center;
             gap: 12px;
             padding: 12px 14px;
             margin-bottom: 8px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
             border-radius: 10px;
             transition: all .2s ease;
-        }
-        .zone-card:hover {
-            background: rgba(0,255,255,0.06);
-            border-color: rgba(0,255,255,0.25);
+        }}
+        .zone-card:hover {{
+            background: var(--panel-hover);
+            border-color: var(--panel-hover-border);
             transform: translateX(3px);
-        }
-        .zone-rank {
+        }}
+        .zone-rank {{
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #6a6a6a;
+            color: var(--text-dim);
             text-align: center;
-        }
-        .zone-rank.top3 {
-            color: #FF00FF;
-        }
-        .zone-name {
-            color: #e0e0e0;
+        }}
+        .zone-rank.top3 {{ color: var(--accent2); }}
+        .zone-name {{
+            color: var(--text);
             font-weight: 500;
             font-size: 0.87rem;
             line-height: 1.25;
-        }
-        .zone-count {
+        }}
+        .zone-count {{
             font-family: 'JetBrains Mono', monospace;
-            color: #00FFFF;
+            color: var(--accent1);
             font-weight: 600;
             font-size: 0.92rem;
-        }
+        }}
 
         /* ---- Legend ---- */
-        .legend-wrap {
+        .legend-wrap {{
             display: flex;
             align-items: center;
             gap: 10px;
             margin-top: 10px;
-        }
-        .legend-bar {
+        }}
+        .legend-bar {{
             flex: 1;
             height: 8px;
             border-radius: 4px;
-            background: linear-gradient(90deg, #00dcdc 0%, #ff00ff 50%, #ff2222 100%);
-        }
-        .legend-label {
-            color: #7a7a7a;
+            background: {t["legend_gradient"]};
+        }}
+        .legend-label {{
+            color: var(--text-dim);
             font-size: 0.72rem;
             letter-spacing: 0.02em;
             white-space: nowrap;
-        }
+        }}
 
-        /* ---- Tabs ---- */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 6px; background: transparent;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        .stTabs [data-baseweb="tab"] {
-            background: transparent; color: #8a8a8a;
-            border-radius: 8px 8px 0 0; padding: 8px 18px;
-            font-weight: 500;
-        }
-        .stTabs [aria-selected="true"] {
-            color: #00FFFF !important;
-            border-bottom: 2px solid #00FFFF;
-        }
+        /* ---- Data journalism narrative ---- */
+        .dj-beat {{
+            padding: 3rem 0 1rem 0;
+            max-width: 780px;
+        }}
+        .dj-kicker {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 14px;
+        }}
+        .dj-headline {{
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            color: var(--text);
+            margin: 0 0 14px 0;
+        }}
+        .dj-deck {{
+            font-size: 1.02rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin: 0 0 24px 0;
+        }}
+        .dj-divider {{
+            border: 0;
+            border-top: 1px solid var(--panel-border);
+            margin: 4rem 0 0 0;
+        }}
 
-        iframe { border-radius: 14px; }
+        /* ---- Source footer ---- */
+        .source-footer {{
+            margin-top: 5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--panel-border);
+        }}
+        .source-footer .source-label {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }}
+        .source-footer .source-value {{
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }}
+        .source-footer a {{
+            color: var(--accent1);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color .2s ease;
+        }}
+        .source-footer a:hover {{
+            border-bottom-color: var(--accent1);
+        }}
 
-        /* Reduce vertical gap between stacked elements */
-        .element-container { margin-bottom: 0.6rem; }
+        iframe {{ border-radius: 14px; }}
+        .element-container {{ margin-bottom: 0.6rem; }}
         </style>
         """, unsafe_allow_html=True)
 
-    def _render_hero(self) -> None:
-        st.markdown("""
-        <a href="https://traffiq.streamlit.app/" class="home-button">
-            <span>🏠</span><span>Home</span>
-        </a>
-        """, unsafe_allow_html=True)
-        st.markdown('<h1 class="hero-title">TraffiiQ</h1>', unsafe_allow_html=True)
+    # ============================================================
+    # Render sections
+    # ============================================================
+    def _render_masthead(self, theme: dict) -> None:
+        top_l, top_r = st.columns([6, 1], vertical_alignment="center")
+        with top_l:
+            st.markdown('<h1 class="hero-title">TraffiiQ</h1>', unsafe_allow_html=True)
+        with top_r:
+            st.toggle("Light mode", key="light_mode")
+
         st.markdown(
-            '<p class="hero-sub">Spatial intelligence on Qatar\'s road accidents — '
-            'zone by zone, year by year.</p>',
+            '<p class="hero-sub">Spatial intelligence on Qatar\'s road accidents, '
+            'zone by zone and year by year.</p>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<p class="source-line">Source: '
+            f'<a href="{SOURCE_URL}" target="_blank" rel="noopener">{SOURCE_LABEL}</a></p>',
             unsafe_allow_html=True,
         )
 
-    def _render_metrics(self) -> None:
+    def _render_metrics(self, theme: dict) -> None:
         m = self.calculate_metrics()
         cards = [
-            ("Annual Avg. Accidents", self.format_number(m["annual_avg"]), "cyan", "2020+"),
-            ("Total Deaths",          f'{m["total_deaths"]:,}',            "red",  "all years"),
-            ("Pedestrian Deaths",     f'{m["pedestrian_deaths"]:,}',       "pink", "collisions"),
-            ("Total Accidents",       self.format_number(m["total_accidents"]), "cyan", "recorded"),
+            ("Annual Avg. Accidents", self.format_number(m["annual_avg"]), "1", "2020+"),
+            ("Total Deaths",          f'{m["total_deaths"]:,}',            "3", "all years"),
+            ("Pedestrian Deaths",     f'{m["pedestrian_deaths"]:,}',       "2", "collisions"),
+            ("Total Accidents",       self.format_number(m["total_accidents"]), "1", "recorded"),
         ]
         cols = st.columns(4, gap="small")
         for col, (label, value, accent, sub) in zip(cols, cards):
@@ -493,10 +647,9 @@ class QatarAccidentsStreamlit:
                 </div>
                 """, unsafe_allow_html=True)
 
-    def _render_zone_sidebar(self, year: int) -> None:
+    def _render_zone_list(self, year: int) -> None:
         year_data = self.df[self.df["ACCIDENT_YEAR"] == year]
         top = year_data["ZONE"].value_counts().head(8)
-
         for rank, (zone, count) in enumerate(top.items(), start=1):
             name = self.zone_names.get(str(zone), f"Zone {zone}")
             rank_class = "zone-rank top3" if rank <= 3 else "zone-rank"
@@ -508,11 +661,10 @@ class QatarAccidentsStreamlit:
             </div>
             """, unsafe_allow_html=True)
 
-    def _render_map_section(self) -> None:
+    def _render_map_section(self, theme: dict) -> None:
         years = sorted(self.df["ACCIDENT_YEAR"].unique().tolist())
 
-        # ---- Title and year selector on the SAME row, baseline-aligned ----
-        title_col, spacer, year_col = st.columns([6, 2, 2], vertical_alignment="center")
+        title_col, _, year_col = st.columns([6, 2, 2], vertical_alignment="center")
         with title_col:
             st.markdown('<div class="section-title">Geographic Distribution</div>',
                         unsafe_allow_html=True)
@@ -527,10 +679,8 @@ class QatarAccidentsStreamlit:
         map_col, side_col = st.columns([2.2, 1], gap="medium")
 
         with map_col:
-            deck = self.create_map(year)
+            deck = self.create_map(year, theme)
             st.pydeck_chart(deck, use_container_width=True)
-
-            # Legend pinned beneath the map
             st.markdown("""
             <div class="legend-wrap">
                 <span class="legend-label">Low</span>
@@ -541,129 +691,192 @@ class QatarAccidentsStreamlit:
 
         with side_col:
             st.markdown(f"""
-            <div class="section-title" style="font-size:1.05rem;">
+            <div class="section-title" style="font-size:1rem;">
                 Top Zones · {year}
             </div>
             <div style="height: 10px;"></div>
             """, unsafe_allow_html=True)
-            self._render_zone_sidebar(year)
-
-    def _render_insights(self) -> None:
-        st.markdown('<div style="height: 24px;"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Insights</div>', unsafe_allow_html=True)
-        st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
-
-        tab1, tab2, tab3 = st.tabs(["📊 Severity", "👥 Age", "🕐 Hour"])
-
-        chart_layout = dict(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font_color="#e0e0e0",
-            font_family="Space Grotesk, sans-serif",
-            margin=dict(l=10, r=10, t=40, b=10),
-        )
-
-        with tab1:
-            candidates = [
-                "NATIONALITY_GROUP_OF_ACCIDENT",
-                "NATURE_EN",
-                "ACCIDENT_NATURE",
-                "ACCIDENT_REASON",
-            ]
-            available = [c for c in candidates if c in self.df.columns]
-            severity_col = "SEVERITY_EN" if "SEVERITY_EN" in self.df.columns else "ACCIDENT_SEVERITY"
-
-            if not available:
-                st.info("No breakdown columns available in dataset.")
-            else:
-                category = st.selectbox(
-                    "Break down by:", available,
-                    format_func=lambda x: x.replace("_", " ").strip().title(),
-                    key="cat_select",
-                )
-                if severity_col in self.df.columns:
-                    counts = (
-                        self.df.groupby([category, severity_col])
-                        .size().unstack(fill_value=0)
-                    )
-                    fig = px.bar(
-                        counts, barmode="stack",
-                        title=f"Severity by {category.replace('_', ' ').title()}",
-                        color_discrete_sequence=px.colors.sequential.Plasma,
-                    )
-                    fig.update_layout(**chart_layout)
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("Severity column missing.")
-
-        with tab2:
-            birth_col = next((c for c in
-                              ["BIRTH_YEAR_OF_ACCIDENT", "BIRTH_YEAR_OF_ACCIDENT_PERPETR"]
-                              if c in self.df.columns), None)
-            if birth_col:
-                d = self.df.copy()
-                d["AGE"] = d["ACCIDENT_YEAR"] - pd.to_numeric(d[birth_col], errors="coerce")
-                d = d[(d["AGE"] >= 0) & (d["AGE"] <= 90)]
-                age_counts = d.groupby("AGE").size().reset_index(name="count")
-                mean_age = d["AGE"].mean() if len(d) else float("nan")
-
-                fig = px.scatter(
-                    age_counts, x="AGE", y="count", size="count",
-                    title="Accidents by Driver Age",
-                    color_discrete_sequence=["#FF00FF"],
-                )
-                if pd.notna(mean_age):
-                    fig.add_annotation(
-                        x=0.98, y=1.06, xref="paper", yref="paper",
-                        text=f"Mean age: {mean_age:.1f}",
-                        showarrow=False,
-                        font=dict(color="#00FFFF", size=12),
-                    )
-                fig.update_layout(**chart_layout)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Birth year column not available.")
-
-        with tab3:
-            if "HOUR" in self.df.columns:
-                hour_counts = (
-                    self.df.dropna(subset=["HOUR"])
-                    .groupby("HOUR").size().reset_index(name="count")
-                )
-                fig = px.bar(
-                    hour_counts, x="HOUR", y="count",
-                    title="Accidents by Hour of Day",
-                    color_discrete_sequence=["#00FFFF"],
-                )
-                fig.update_layout(**chart_layout)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Accident time column not available.")
+            self._render_zone_list(year)
 
     # ------------------------------------------------------------
+    # Story beats (data journalism)
+    # ------------------------------------------------------------
+    def _story_header(self, kicker: str, headline: str, deck: str) -> None:
+        st.markdown(f"""
+        <div class="dj-beat">
+            <div class="dj-kicker">{kicker}</div>
+            <h2 class="dj-headline">{headline}</h2>
+            <p class="dj-deck">{deck}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    def _plotly_layout(self, theme: dict) -> dict:
+        return dict(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color=theme["text"],
+            font_family="Space Grotesk, sans-serif",
+            margin=dict(l=10, r=10, t=10, b=10),
+            xaxis=dict(gridcolor=theme["panel_border"], zeroline=False),
+            yaxis=dict(gridcolor=theme["panel_border"], zeroline=False),
+        )
+
+    def _story_severity(self, theme: dict) -> None:
+        self._story_header(
+            "01 · Severity",
+            "What kinds of accidents get recorded?",
+            "Every incident carries a severity tag. Simple incidents and light "
+            "injuries dominate the count, but pedestrian collisions carry a "
+            "disproportionate share of fatalities.",
+        )
+
+        candidates = [
+            "NATIONALITY_GROUP_OF_ACCIDENT",
+            "NATURE_EN",
+            "ACCIDENT_NATURE",
+            "ACCIDENT_REASON",
+        ]
+        available = [c for c in candidates if c in self.df.columns]
+        severity_col = "SEVERITY_EN" if "SEVERITY_EN" in self.df.columns else "ACCIDENT_SEVERITY"
+
+        if not available or severity_col not in self.df.columns:
+            st.info("Breakdown columns not available.")
+            return
+
+        category = st.selectbox(
+            "Break down by:",
+            available,
+            format_func=lambda x: x.replace("_", " ").strip().title(),
+            key="cat_select",
+        )
+        counts = (
+            self.df.groupby([category, severity_col])
+            .size().unstack(fill_value=0)
+        )
+        fig = px.bar(
+            counts, barmode="stack",
+            color_discrete_sequence=theme["chart_palette"],
+        )
+        fig.update_layout(**self._plotly_layout(theme), showlegend=True)
+        st.plotly_chart(fig, use_container_width=True)
+
+    def _story_age(self, theme: dict) -> None:
+        birth_col = next(
+            (c for c in ["BIRTH_YEAR_OF_ACCIDENT", "BIRTH_YEAR_OF_ACCIDENT_PERPETR"]
+             if c in self.df.columns),
+            None,
+        )
+        if not birth_col:
+            return
+
+        d = self.df.copy()
+        d["AGE"] = d["ACCIDENT_YEAR"] - pd.to_numeric(d[birth_col], errors="coerce")
+        d = d[(d["AGE"] >= 15) & (d["AGE"] <= 90)]
+        if d.empty:
+            return
+
+        mean_age = d["AGE"].mean()
+
+        self._story_header(
+            "02 · Drivers",
+            "Who is behind the wheel when accidents happen?",
+            f"Filtered to drivers between 15 and 90, the distribution peaks in "
+            f"the late 30s. The mean age across all recorded accidents is "
+            f"{mean_age:.1f} years.",
+        )
+
+        age_counts = d.groupby("AGE").size().reset_index(name="count")
+        fig = px.scatter(
+            age_counts, x="AGE", y="count", size="count",
+            color_discrete_sequence=[theme["accent1"]],
+        )
+        fig.update_layout(**self._plotly_layout(theme), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+    def _story_hour(self, theme: dict) -> None:
+        if "HOUR" not in self.df.columns:
+            return
+        hour_counts = (
+            self.df.dropna(subset=["HOUR"])
+            .groupby("HOUR").size().reset_index(name="count")
+        )
+        if hour_counts.empty:
+            return
+
+        peak_hour = int(hour_counts.loc[hour_counts["count"].idxmax(), "HOUR"])
+        peak_label = f"{peak_hour:02d}:00"
+
+        self._story_header(
+            "03 · Time",
+            "When do accidents happen most?",
+            f"The hourly pattern is unmistakable. The daily peak lands at "
+            f"around {peak_label}, aligning with evening rush. Early morning "
+            f"hours remain the safest window.",
+        )
+
+        fig = px.bar(
+            hour_counts, x="HOUR", y="count",
+            color_discrete_sequence=[theme["accent2"]],
+        )
+        fig.update_layout(**self._plotly_layout(theme), showlegend=False)
+        fig.update_xaxes(
+            tickmode="array",
+            tickvals=list(range(0, 24, 2)),
+            ticktext=[f"{h:02d}h" for h in range(0, 24, 2)],
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    def _render_story(self, theme: dict) -> None:
+        st.markdown('<hr class="dj-divider"/>', unsafe_allow_html=True)
+        self._story_severity(theme)
+        self._story_hour(theme)
+        self._story_age(theme)
+
+    def _render_footer(self) -> None:
+        st.markdown(f"""
+        <footer class="source-footer">
+            <div class="source-label">Source</div>
+            <div class="source-value">
+                <a href="{SOURCE_URL}" target="_blank" rel="noopener">
+                    {SOURCE_LABEL}
+                </a>
+            </div>
+        </footer>
+        """, unsafe_allow_html=True)
+
+    # ============================================================
+    # Main
+    # ============================================================
     def run_dashboard(self) -> None:
         st.set_page_config(
-            page_title="TraffiiQ · Accident Analytics",
-            page_icon="🚗", layout="wide",
+            page_title="TraffiiQ",
+            layout="wide",
         )
-        self._inject_css()
-        self._render_hero()
+
+        # Resolve theme early — needed before CSS injection
+        if "light_mode" not in st.session_state:
+            st.session_state.light_mode = False
+
+        is_light = st.session_state.light_mode
+        theme = LIGHT if is_light else DARK
+
+        self._inject_css(theme)
+        self._render_masthead(theme)
 
         if self.load_error or self.df is None or self.df.empty:
-            st.error("⚠️ Accident data could not be loaded.")
+            st.error("Accident data could not be loaded.")
             if self.load_error:
                 st.markdown(f"**Reason:** {self.load_error}")
             return
 
-        self._render_metrics()
+        self._render_metrics(theme)
         st.markdown('<div style="height: 28px;"></div>', unsafe_allow_html=True)
 
         if self.zones_data:
-            self._render_map_section()
-        else:
-            st.warning("Zone polygons not loaded — map section skipped.")
+            self._render_map_section(theme)
 
-        self._render_insights()
+        self._render_story(theme)
+        self._render_footer()
 
 
 if __name__ == "__main__":
